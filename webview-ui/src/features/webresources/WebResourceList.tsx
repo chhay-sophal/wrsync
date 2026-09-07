@@ -24,6 +24,7 @@ import {
   type Ref,
 } from "react";
 import { listWebResourcesForSolution, type WebResource } from "../../api/dataverse";
+import { listLinks, type LocalFile, type ResourceLink } from "../../api/local";
 import { usePersistedState } from "../../hooks/usePersistedState";
 import { ColumnHeaderMenu, type SortDirection } from "./ColumnHeaderMenu";
 import {
@@ -65,6 +66,9 @@ export interface WebResourceListHandle {
 interface Props {
   orgApiUrl: string;
   solutionId: string;
+  environmentId: string;
+  solutionUniqueName: string;
+  localFiles: LocalFile[];
   onActiveFilterOrSortChange?: (active: boolean) => void;
   onRefreshingChange?: (refreshing: boolean) => void;
   ref?: Ref<WebResourceListHandle>;
@@ -73,6 +77,9 @@ interface Props {
 export function WebResourceList({
   orgApiUrl,
   solutionId,
+  environmentId,
+  solutionUniqueName,
+  localFiles,
   onActiveFilterOrSortChange,
   onRefreshingChange,
   ref,
@@ -82,7 +89,16 @@ export function WebResourceList({
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
   const [draftFilters, setDraftFilters] = useState<Filters>(EMPTY_FILTERS);
   const [sort, setSort] = useState<SortState>(null);
+  const [links, setLinks] = useState<ResourceLink[]>([]);
   const [detailsId, setDetailsId] = useState<string | null>(null);
+
+  const refreshLinks = useCallback(() => {
+    listLinks().then(setLinks);
+  }, []);
+
+  useEffect(() => {
+    refreshLinks();
+  }, [refreshLinks]);
 
   // Persisted per-solution so switching solutions doesn't show another solution's filters,
   // but returning to one you've already filtered restores it. Read via a ref inside the
@@ -201,10 +217,10 @@ export function WebResourceList({
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="min-h-0 flex-1 overflow-auto">
-        <Table className="w-full table-fixed min-w-[640px]">
+        <Table className="w-full table-fixed min-w-[800px]">
           <TableHeader className="sticky top-0 z-10" style={{ background: tokens.colorNeutralBackground1 }}>
             <TableRow>
-              <TableHeaderCell className="w-1/3">
+              <TableHeaderCell className="w-1/4">
                 <HeaderContent label="Name">
                   <ColumnHeaderMenu
                     active={sortDirectionFor("name") !== null || filters.name !== ""}
@@ -227,7 +243,7 @@ export function WebResourceList({
                   </ColumnHeaderMenu>
                 </HeaderContent>
               </TableHeaderCell>
-              <TableHeaderCell className="w-1/3">
+              <TableHeaderCell className="w-1/4">
                 <HeaderContent label="Display Name">
                   <ColumnHeaderMenu
                     active={sortDirectionFor("displayname") !== null || filters.displayname !== ""}
@@ -306,15 +322,27 @@ export function WebResourceList({
                   </ColumnHeaderMenu>
                 </HeaderContent>
               </TableHeaderCell>
+              <TableHeaderCell className="w-1/4">
+                <div className="font-bold">Local File</div>
+              </TableHeaderCell>
             </TableRow>
           </TableHeader>
           <TableBody>
             {displayedResources.map((r) => (
-              <WebResourceRow key={r.webresourceid} resource={r} onShowDetails={setDetailsId} />
+              <WebResourceRow
+                key={r.webresourceid}
+                resource={r}
+                onShowDetails={setDetailsId}
+                environmentId={environmentId}
+                solutionUniqueName={solutionUniqueName}
+                localFiles={localFiles}
+                link={links.find((l) => l.webresourceId === r.webresourceid)}
+                onLinksChanged={refreshLinks}
+              />
             ))}
             {displayedResources.length === 0 && (
               <TableRow>
-                <TableCell colSpan={4}>
+                <TableCell colSpan={5}>
                   <Text>No web resources match the current filters.</Text>
                 </TableCell>
               </TableRow>

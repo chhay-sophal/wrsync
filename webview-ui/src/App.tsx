@@ -244,6 +244,9 @@ function App({ isDark, onToggleTheme }: Props) {
               ref={webResourceListRef}
               orgApiUrl={environment.apiUrl}
               solutionId={solution.solutionid}
+              environmentId={environment.id}
+              solutionUniqueName={solution.uniquename}
+              localFiles={workspaceFiles.files}
               onActiveFilterOrSortChange={setHasActiveWebResourceFilters}
               onRefreshingChange={setRefreshing}
             />

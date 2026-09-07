@@ -6,11 +6,13 @@ import {
 	listSolutions,
 	listWebResourcesForSolution,
 } from './dataverseClient';
+import { initLinksStore } from './linksStore';
 import { initPanel, openPanel, showWebResources } from './panel';
 
 export function activate(context: vscode.ExtensionContext) {
 	initAuth(context);
 	initPanel(context);
+	initLinksStore(context);
 
 	context.subscriptions.push(
 		vscode.commands.registerCommand('wrsync.signIn', async () => {

@@ -1,16 +1,31 @@
 import { Button, TableCell, TableCellLayout, TableRow } from "@fluentui/react-components";
 import { InfoRegular } from "@fluentui/react-icons";
 import { memo } from "react";
+import type { LocalFile, ResourceLink } from "../../api/local";
 import type { WebResource } from "../../api/dataverse";
+import { LocalFileLink } from "./LocalFileLink";
 import { TYPE_LABELS } from "./webResourceTypes";
 
 interface Props {
   resource: WebResource;
   onShowDetails: (id: string) => void;
+  environmentId: string;
+  solutionUniqueName: string;
+  localFiles: LocalFile[];
+  link: ResourceLink | undefined;
+  onLinksChanged: () => void;
 }
 
 /** Memoized so that editing filters/sort doesn't force every row to re-render too. */
-function WebResourceRowImpl({ resource: r, onShowDetails }: Props) {
+function WebResourceRowImpl({
+  resource: r,
+  onShowDetails,
+  environmentId,
+  solutionUniqueName,
+  localFiles,
+  link,
+  onLinksChanged,
+}: Props) {
   return (
     <TableRow>
       <TableCell>
@@ -39,6 +54,17 @@ function WebResourceRowImpl({ resource: r, onShowDetails }: Props) {
       </TableCell>
       <TableCell>
         <TableCellLayout truncate>{r.ismanaged ? "Yes" : "No"}</TableCellLayout>
+      </TableCell>
+      <TableCell>
+        <LocalFileLink
+          environmentId={environmentId}
+          solutionUniqueName={solutionUniqueName}
+          webresourceId={r.webresourceid}
+          webresourceName={r.name}
+          localFiles={localFiles}
+          link={link}
+          onLinksChanged={onLinksChanged}
+        />
       </TableCell>
     </TableRow>
   );

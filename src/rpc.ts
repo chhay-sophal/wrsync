@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { getAuthStatus, login, logout } from './auth';
 import { getWebResourceDetails, listEnvironments, listSolutions, listWebResourcesForSolution } from './dataverseClient';
+import { createLink, deleteLink, listLinks, type ResourceLink } from './linksStore';
 import { listWorkspaceFiles } from './workspaceFiles';
 
 interface RpcRequest {
@@ -23,6 +24,9 @@ const handlers: Record<string, Handler> = {
 	'dataverse.getWebResourceDetails': (params: { orgApiUrl: string; webresourceId: string }) =>
 		getWebResourceDetails(params.orgApiUrl, params.webresourceId),
 	'workspace.listFiles': () => listWorkspaceFiles(),
+	'links.list': async () => listLinks(),
+	'links.create': (params: Omit<ResourceLink, 'id'>) => createLink(params),
+	'links.delete': (params: { id: string }) => deleteLink(params.id),
 };
 
 /** Dispatches an { type: 'rpc' } message from the webview to the matching function in this
