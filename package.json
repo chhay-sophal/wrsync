@@ -3,13 +3,25 @@
   "displayName": "Web Resource Sync",
   "description": "Edit Power Apps (Dataverse) web resources from local files, right inside VS Code",
   "version": "0.0.1",
-  "publisher": "sophal-syncmusic",
+  "publisher": "sophal-developer",
   "license": "MIT",
+  "icon": "media/marketplace-icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/chhay-sophal/wrsync.git"
+  },
   "engines": {
     "vscode": "^1.135.0"
   },
   "categories": [
     "Other"
+  ],
+  "keywords": [
+    "power apps",
+    "power platform",
+    "dataverse",
+    "dynamics 365",
+    "web resources"
   ],
   "activationEvents": [],
   "main": "./dist/extension.js",
