@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { getAuthStatus, initAuth, login, logout } from './auth';
+import { listEnvironments } from './dataverseClient';
 
 export function activate(context: vscode.ExtensionContext) {
 	initAuth(context);
@@ -24,6 +25,24 @@ export function activate(context: vscode.ExtensionContext) {
 			vscode.window.showInformationMessage(
 				status.signedIn ? `Signed in as ${status.username}` : 'Not signed in'
 			);
+		}),
+
+		vscode.commands.registerCommand('wrsync.pickEnvironment', async () => {
+			const environments = await vscode.window.withProgress(
+				{ location: vscode.ProgressLocation.Notification, title: 'Loading environments…' },
+				() => listEnvironments()
+			);
+			if (environments.length === 0) {
+				vscode.window.showInformationMessage('No Dataverse environments found for this account.');
+				return;
+			}
+			const picked = await vscode.window.showQuickPick(
+				environments.map((env) => ({ label: env.displayName, description: env.apiUrl, env })),
+				{ placeHolder: 'Select a Dataverse environment' }
+			);
+			if (picked) {
+				vscode.window.showInformationMessage(`Picked: ${picked.env.displayName} (${picked.env.apiUrl})`);
+			}
 		})
 	);
 }

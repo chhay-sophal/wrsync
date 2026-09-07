@@ -24,6 +24,10 @@
       {
         "command": "wrsync.showAuthStatus",
         "title": "Web Resource Sync: Show Sign-in Status"
+      },
+      {
+        "command": "wrsync.pickEnvironment",
+        "title": "Web Resource Sync: Pick Environment"
       }
     ]
   },
