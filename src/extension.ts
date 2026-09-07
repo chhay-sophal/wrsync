@@ -6,6 +6,7 @@ import {
 	listSolutions,
 	listWebResourcesForSolution,
 } from './dataverseClient';
+import { openPanel } from './panel';
 
 export function activate(context: vscode.ExtensionContext) {
 	initAuth(context);
@@ -101,6 +102,10 @@ export function activate(context: vscode.ExtensionContext) {
 			} catch (err) {
 				vscode.window.showErrorMessage(`Failed to browse web resources: ${(err as Error).message}`);
 			}
+		}),
+
+		vscode.commands.registerCommand('wrsync.openPanel', () => {
+			openPanel();
 		})
 	);
 }
