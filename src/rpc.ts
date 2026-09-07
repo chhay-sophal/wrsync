@@ -1,8 +1,14 @@
 import * as vscode from 'vscode';
 import { getAuthStatus, login, logout } from './auth';
-import { getWebResourceDetails, listEnvironments, listSolutions, listWebResourcesForSolution } from './dataverseClient';
+import {
+	getWebResourceContent,
+	getWebResourceDetails,
+	listEnvironments,
+	listSolutions,
+	listWebResourcesForSolution,
+} from './dataverseClient';
 import { createLink, deleteLink, listLinks, type ResourceLink } from './linksStore';
-import { listWorkspaceFiles } from './workspaceFiles';
+import { getWorkspaceFileContent, listWorkspaceFiles } from './workspaceFiles';
 
 interface RpcRequest {
 	type: 'rpc';
@@ -23,7 +29,10 @@ const handlers: Record<string, Handler> = {
 		listWebResourcesForSolution(params.orgApiUrl, params.solutionId),
 	'dataverse.getWebResourceDetails': (params: { orgApiUrl: string; webresourceId: string }) =>
 		getWebResourceDetails(params.orgApiUrl, params.webresourceId),
+	'dataverse.getWebResourceContent': (params: { orgApiUrl: string; webresourceId: string }) =>
+		getWebResourceContent(params.orgApiUrl, params.webresourceId),
 	'workspace.listFiles': () => listWorkspaceFiles(),
+	'workspace.getFileContent': (params: { path: string }) => getWorkspaceFileContent(params.path),
 	'links.list': async () => listLinks(),
 	'links.create': (params: Omit<ResourceLink, 'id'>) => createLink(params),
 	'links.delete': (params: { id: string }) => deleteLink(params.id),

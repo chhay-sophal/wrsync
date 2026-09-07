@@ -29,3 +29,7 @@ export function createLink(link: Omit<ResourceLink, "id">): Promise<ResourceLink
 export function deleteLink(id: string): Promise<void> {
   return callRpc<void>("links.delete", { id });
 }
+
+export function getLocalFileContent(path: string): Promise<string> {
+  return callRpc<string>("workspace.getFileContent", { path });
+}

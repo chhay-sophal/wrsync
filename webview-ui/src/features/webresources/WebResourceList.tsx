@@ -23,9 +23,10 @@ import {
   type ReactNode,
   type Ref,
 } from "react";
-import { listWebResourcesForSolution, type WebResource } from "../../api/dataverse";
-import { listLinks, type LocalFile, type ResourceLink } from "../../api/local";
+import { getWebResourceContent, listWebResourcesForSolution, type WebResource } from "../../api/dataverse";
+import { getLocalFileContent, listLinks, type LocalFile, type ResourceLink } from "../../api/local";
 import { usePersistedState } from "../../hooks/usePersistedState";
+import { base64ToUtf8 } from "../../lib/base64";
 import { ColumnHeaderMenu, type SortDirection } from "./ColumnHeaderMenu";
 import {
   deserializeFilters,
@@ -90,6 +91,7 @@ export function WebResourceList({
   const [draftFilters, setDraftFilters] = useState<Filters>(EMPTY_FILTERS);
   const [sort, setSort] = useState<SortState>(null);
   const [links, setLinks] = useState<ResourceLink[]>([]);
+  const [modifiedStatus, setModifiedStatus] = useState<Map<string, boolean>>(new Map());
   const [detailsId, setDetailsId] = useState<string | null>(null);
 
   const refreshLinks = useCallback(() => {
@@ -99,6 +101,31 @@ export function WebResourceList({
   useEffect(() => {
     refreshLinks();
   }, [refreshLinks]);
+
+  const checkOneModified = useCallback(
+    async (link: ResourceLink) => {
+      try {
+        const [localContent, remoteBase64] = await Promise.all([
+          getLocalFileContent(link.localPath),
+          getWebResourceContent(orgApiUrl, link.webresourceId),
+        ]);
+        const modified = localContent !== base64ToUtf8(remoteBase64);
+        setModifiedStatus((prev) => new Map(prev).set(link.webresourceId, modified));
+      } catch {
+        // Transient fetch error — leave the previous known state alone rather than guess.
+      }
+    },
+    [orgApiUrl]
+  );
+
+  // Full check whenever the linked-files list changes (initial load, solution switch, or a
+  // link was just created/removed). No file-watching yet, so unlike the original app there's
+  // no incremental re-check when a watched local file changes on disk.
+  useEffect(() => {
+    links.forEach((link) => {
+      checkOneModified(link);
+    });
+  }, [links, checkOneModified]);
 
   // Persisted per-solution so switching solutions doesn't show another solution's filters,
   // but returning to one you've already filtered restores it. Read via a ref inside the
@@ -337,6 +364,7 @@ export function WebResourceList({
                 solutionUniqueName={solutionUniqueName}
                 localFiles={localFiles}
                 link={links.find((l) => l.webresourceId === r.webresourceid)}
+                isModified={modifiedStatus.get(r.webresourceid) ?? false}
                 onLinksChanged={refreshLinks}
               />
             ))}

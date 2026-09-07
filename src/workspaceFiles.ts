@@ -1,5 +1,7 @@
 import * as vscode from 'vscode';
 
+const textDecoder = new TextDecoder();
+
 export interface LocalFile {
 	path: string;
 	mtimeMs: number;
@@ -30,4 +32,16 @@ export async function listWorkspaceFiles(): Promise<{ root: string | null; files
 	files.sort((a, b) => a.path.localeCompare(b.path));
 
 	return { root: folder.uri.fsPath, files };
+}
+
+/** Reads a file's content as UTF-8 text, resolved relative to the first open workspace
+ * folder (the same root listWorkspaceFiles() reports paths against). */
+export async function getWorkspaceFileContent(relativePath: string): Promise<string> {
+	const folder = vscode.workspace.workspaceFolders?.[0];
+	if (!folder) {
+		throw new Error('No workspace folder is open');
+	}
+	const uri = vscode.Uri.joinPath(folder.uri, relativePath);
+	const bytes = await vscode.workspace.fs.readFile(uri);
+	return textDecoder.decode(bytes);
 }

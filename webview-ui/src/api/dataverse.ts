@@ -45,3 +45,7 @@ export function listWebResourcesForSolution(orgApiUrl: string, solutionId: strin
 export function getWebResourceDetails(orgApiUrl: string, webresourceId: string): Promise<WebResourceDetails> {
   return callRpc<WebResourceDetails>("dataverse.getWebResourceDetails", { orgApiUrl, webresourceId });
 }
+
+export function getWebResourceContent(orgApiUrl: string, webresourceId: string): Promise<string> {
+  return callRpc<string>("dataverse.getWebResourceContent", { orgApiUrl, webresourceId });
+}

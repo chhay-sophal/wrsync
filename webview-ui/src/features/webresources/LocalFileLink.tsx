@@ -1,4 +1,4 @@
-import { Button, Dropdown, Option, Text, tokens } from "@fluentui/react-components";
+import { Badge, Button, Dropdown, Option, Text, tokens } from "@fluentui/react-components";
 import { LinkDismissRegular, LinkRegular } from "@fluentui/react-icons";
 import { useState } from "react";
 import { createLink, deleteLink, type LocalFile, type ResourceLink } from "../../api/local";
@@ -10,11 +10,12 @@ interface Props {
   webresourceName: string;
   localFiles: LocalFile[];
   link: ResourceLink | undefined;
+  /** Whether the linked local file's content currently differs from what's published in
+   * Dataverse. Publishing itself comes in a later step - for now this is informational. */
+  isModified: boolean;
   onLinksChanged: () => void;
 }
 
-/** Publishing (uploading the linked file's content) comes in a later step - for now this
- * only records which local file a web resource corresponds to. */
 export function LocalFileLink({
   environmentId,
   solutionUniqueName,
@@ -22,6 +23,7 @@ export function LocalFileLink({
   webresourceName,
   localFiles,
   link,
+  isModified,
   onLinksChanged,
 }: Props) {
   const [busy, setBusy] = useState(false);
@@ -67,6 +69,11 @@ export function LocalFileLink({
           <Text size={200} title={link.localPath} className="min-w-0 flex-1 truncate">
             {link.localPath}
           </Text>
+          {isModified && (
+            <Badge color="warning" className="shrink-0">
+              Modified
+            </Badge>
+          )}
           <Button
             size="small"
             appearance="subtle"

@@ -13,6 +13,7 @@ interface Props {
   solutionUniqueName: string;
   localFiles: LocalFile[];
   link: ResourceLink | undefined;
+  isModified: boolean;
   onLinksChanged: () => void;
 }
 
@@ -24,6 +25,7 @@ function WebResourceRowImpl({
   solutionUniqueName,
   localFiles,
   link,
+  isModified,
   onLinksChanged,
 }: Props) {
   return (
@@ -63,6 +65,7 @@ function WebResourceRowImpl({
           webresourceName={r.name}
           localFiles={localFiles}
           link={link}
+          isModified={isModified}
           onLinksChanged={onLinksChanged}
         />
       </TableCell>
