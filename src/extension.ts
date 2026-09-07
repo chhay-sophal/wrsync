@@ -1,26 +1,31 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
+import { getAuthStatus, initAuth, login, logout } from './auth';
 
-// This method is called when your extension is activated
-// Your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
+	initAuth(context);
 
-	// Use the console to output diagnostic information (console.log) and errors (console.error)
-	// This line of code will only be executed once when your extension is activated
-	console.log('Congratulations, your extension "wrsync" is now active!');
+	context.subscriptions.push(
+		vscode.commands.registerCommand('wrsync.signIn', async () => {
+			try {
+				const { username } = await login();
+				vscode.window.showInformationMessage(`Signed in as ${username}`);
+			} catch (err) {
+				vscode.window.showErrorMessage(`Sign-in failed: ${(err as Error).message}`);
+			}
+		}),
 
-	// The command has been defined in the package.json file
-	// Now provide the implementation of the command with registerCommand
-	// The commandId parameter must match the command field in package.json
-	const disposable = vscode.commands.registerCommand('wrsync.helloWorld', () => {
-		// The code you place here will be executed every time your command is executed
-		// Display a message box to the user
-		vscode.window.showInformationMessage('Hello World from Web Resource Sync!');
-	});
+		vscode.commands.registerCommand('wrsync.signOut', async () => {
+			await logout();
+			vscode.window.showInformationMessage('Signed out.');
+		}),
 
-	context.subscriptions.push(disposable);
+		vscode.commands.registerCommand('wrsync.showAuthStatus', async () => {
+			const status = await getAuthStatus();
+			vscode.window.showInformationMessage(
+				status.signedIn ? `Signed in as ${status.username}` : 'Not signed in'
+			);
+		})
+	);
 }
 
-// This method is called when your extension is deactivated
 export function deactivate() {}
