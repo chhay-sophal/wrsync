@@ -1,7 +1,6 @@
 import {
   Button,
   Card,
-  Divider,
   Field,
   Input,
   Spinner,
@@ -15,7 +14,6 @@ import {
   ArrowSyncRegular,
   CloudArrowUpRegular,
   CloudRegular,
-  DocumentBulletListRegular,
   FolderRegular,
   SignOutRegular,
   WeatherMoonRegular,
@@ -24,7 +22,6 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { getAuthStatus, login, logout } from "./api/auth";
 import type { DataverseEnvironment, Solution } from "./api/dataverse";
-import { SectionCard } from "./components/SectionCard";
 import { SettingsBarItem } from "./components/SettingsBarItem";
 import { EnvironmentPicker } from "./features/environments/EnvironmentPicker";
 import { SolutionPicker } from "./features/solutions/SolutionPicker";
@@ -95,53 +92,56 @@ function App({ isDark, onToggleTheme }: Props) {
     <div className="flex h-screen flex-col" style={{ background: tokens.colorNeutralBackground2 }}>
       <div>
         <header
-          className="flex items-center justify-between px-6 py-2.5"
+          className="flex items-center justify-between gap-2 px-2 py-1"
           style={{
             background: tokens.colorNeutralBackground1,
             borderBottom: `1px solid ${tokens.colorNeutralStroke2}`,
           }}
         >
-          <Text weight="semibold" size={500}>
-            Web Resource Sync
+          <Text size={200} truncate wrap={false} className="min-w-0 flex-1">
+            {username ?? "Not signed in"}
           </Text>
-          <div className="flex items-center gap-2">
-            {username && <Text size={200}>{username}</Text>}
+          <div className="flex shrink-0 items-center gap-1">
             <Button
+              size="small"
               appearance="subtle"
               icon={isDark ? <WeatherSunnyRegular /> : <WeatherMoonRegular />}
               onClick={onToggleTheme}
+              title="Toggle theme"
             />
             {username && (
-              <Button appearance="subtle" icon={<SignOutRegular />} onClick={handleSignOut}>
-                Sign out
-              </Button>
+              <Button
+                size="small"
+                appearance="subtle"
+                icon={<SignOutRegular />}
+                onClick={handleSignOut}
+                title="Sign out"
+              />
             )}
           </div>
         </header>
 
         {username && (
           <div
-            className="flex flex-wrap items-center gap-1 px-6 py-1"
+            className="flex flex-col gap-1 px-2 py-2"
             style={{
               background: tokens.colorNeutralBackground1,
               borderBottom: `1px solid ${tokens.colorNeutralStroke2}`,
             }}
           >
-            <div className="flex flex-1 items-center gap-2 px-3 py-1">
+            <div className="flex items-center gap-2 px-1">
               <FolderRegular />
               <div className="min-w-0 flex flex-1 flex-col items-start leading-tight">
                 <Text size={100} style={{ color: tokens.colorNeutralForeground3 }}>
                   Workspace
                 </Text>
-                <Text size={300} truncate wrap={false} className="w-full text-left truncate">
+                <Text size={200} truncate wrap={false} className="w-full text-left truncate">
                   {workspaceFiles.root
                     ? `${workspaceFiles.root} — ${workspaceFiles.files.length} file(s)`
                     : "No folder open"}
                 </Text>
               </div>
             </div>
-
-            <Divider vertical className="h-7 max-w-1" />
 
             <SettingsBarItem
               icon={<CloudRegular />}
@@ -159,8 +159,6 @@ function App({ isDark, onToggleTheme }: Props) {
                 }}
               />
             </SettingsBarItem>
-
-            <Divider vertical className="h-7 max-w-1" />
 
             <SettingsBarItem
               icon={<AppsListDetailRegular />}
@@ -185,14 +183,14 @@ function App({ isDark, onToggleTheme }: Props) {
         )}
       </div>
 
-      <main className="mx-auto flex w-full flex-1 flex-col p-2 overflow-hidden">
+      <main className="flex w-full flex-1 flex-col overflow-hidden p-2">
         {checkingStatus ? (
-          <div className="flex justify-center p-12">
+          <div className="flex justify-center p-8">
             <Spinner label="Checking sign-in status..." />
           </div>
         ) : !username ? (
-          <Card className="mx-auto my-12 max-w-[420px] p-8">
-            <Title2 as="h1" className="mb-5">
+          <Card className="p-4">
+            <Title2 as="h1" className="mb-4" style={{ fontSize: tokens.fontSizeBase500 }}>
               Sign in to get started
             </Title2>
             <Field
@@ -221,57 +219,58 @@ function App({ isDark, onToggleTheme }: Props) {
             )}
           </Card>
         ) : environment && solution ? (
-          <SectionCard
-            icon={<DocumentBulletListRegular />}
-            title="Web resources"
-            action={
-              <div className="flex gap-2">
-                {selectedCount > 0 && (
-                  <Button
-                    appearance="primary"
-                    icon={<CloudArrowUpRegular />}
-                    onClick={() => webResourceListRef.current?.publishSelected()}
-                    disabled={publishingAll}
-                  >
-                    {publishingAll ? "Publishing..." : `Publish Selected (${selectedCount})`}
-                  </Button>
-                )}
-                {modifiedCount > 0 && (
-                  <Button
-                    appearance={selectedCount > 0 ? "secondary" : "primary"}
-                    icon={<CloudArrowUpRegular />}
-                    onClick={() => webResourceListRef.current?.publishAll()}
-                    disabled={publishingAll}
-                  >
-                    {publishingAll ? "Publishing..." : `Publish All (${modifiedCount})`}
-                  </Button>
-                )}
-                {hasActiveWebResourceFilters && (
-                  <Button
-                    appearance="subtle"
-                    onClick={() => webResourceListRef.current?.clearAllFiltersAndSort()}
-                  >
-                    Clear filters
-                  </Button>
-                )}
+          <div className="flex min-h-0 flex-1 flex-col gap-2">
+            <div className="flex flex-wrap gap-1">
+              {selectedCount > 0 && (
                 <Button
-                  appearance="secondary"
-                  icon={<AddRegular />}
-                  onClick={() => webResourceListRef.current?.openCreateDialog()}
+                  size="small"
+                  appearance="primary"
+                  icon={<CloudArrowUpRegular />}
+                  onClick={() => webResourceListRef.current?.publishSelected()}
+                  disabled={publishingAll}
                 >
-                  Create
+                  {publishingAll ? "Publishing..." : `Publish Selected (${selectedCount})`}
                 </Button>
+              )}
+              {modifiedCount > 0 && (
                 <Button
-                  appearance="secondary"
-                  icon={<ArrowSyncRegular />}
-                  onClick={() => webResourceListRef.current?.refreshAll()}
-                  disabled={refreshing || publishingAll}
+                  size="small"
+                  appearance={selectedCount > 0 ? "secondary" : "primary"}
+                  icon={<CloudArrowUpRegular />}
+                  onClick={() => webResourceListRef.current?.publishAll()}
+                  disabled={publishingAll}
                 >
-                  {refreshing ? "Refreshing..." : "Refresh"}
+                  {publishingAll ? "Publishing..." : `Publish All (${modifiedCount})`}
                 </Button>
-              </div>
-            }
-          >
+              )}
+              {hasActiveWebResourceFilters && (
+                <Button
+                  size="small"
+                  appearance="subtle"
+                  onClick={() => webResourceListRef.current?.clearAllFiltersAndSort()}
+                >
+                  Clear filters
+                </Button>
+              )}
+              <Button
+                size="small"
+                appearance="secondary"
+                icon={<AddRegular />}
+                onClick={() => webResourceListRef.current?.openCreateDialog()}
+              >
+                Create
+              </Button>
+              <Button
+                size="small"
+                appearance="secondary"
+                icon={<ArrowSyncRegular />}
+                onClick={() => webResourceListRef.current?.refreshAll()}
+                disabled={refreshing || publishingAll}
+              >
+                {refreshing ? "Refreshing..." : "Refresh"}
+              </Button>
+            </div>
+
             <WebResourceList
               ref={webResourceListRef}
               orgApiUrl={environment.apiUrl}
@@ -287,10 +286,10 @@ function App({ isDark, onToggleTheme }: Props) {
               onPublishingAllChange={setPublishingAll}
               onRefreshingChange={setRefreshing}
             />
-          </SectionCard>
+          </div>
         ) : (
-          <div className="flex justify-center p-16">
-            <Text style={{ color: tokens.colorNeutralForeground3 }}>
+          <div className="flex justify-center p-8">
+            <Text style={{ color: tokens.colorNeutralForeground3 }} align="center">
               Pick an environment and solution above to see its web resources.
             </Text>
           </div>
