@@ -23,10 +23,16 @@ import {
   type ReactNode,
   type Ref,
 } from "react";
-import { getWebResourceContent, listWebResourcesForSolution, type WebResource } from "../../api/dataverse";
+import {
+  getWebResourceContent,
+  listWebResourcesForSolution,
+  publishWebResources,
+  updateWebResourceContent,
+  type WebResource,
+} from "../../api/dataverse";
 import { getLocalFileContent, listLinks, type LocalFile, type ResourceLink } from "../../api/local";
 import { usePersistedState } from "../../hooks/usePersistedState";
-import { base64ToUtf8 } from "../../lib/base64";
+import { base64ToUtf8, utf8ToBase64 } from "../../lib/base64";
 import { ColumnHeaderMenu, type SortDirection } from "./ColumnHeaderMenu";
 import {
   deserializeFilters,
@@ -61,6 +67,8 @@ function sortValue(r: WebResource, column: SortColumn): string {
 
 export interface WebResourceListHandle {
   clearAllFiltersAndSort: () => void;
+  publishAll: () => Promise<void>;
+  publishSelected: () => Promise<void>;
   refreshAll: () => Promise<void>;
 }
 
@@ -73,6 +81,9 @@ interface Props {
   modifiedPaths: Set<string>;
   onFilePublished: (localPath: string) => void;
   onActiveFilterOrSortChange?: (active: boolean) => void;
+  onModifiedCountChange?: (count: number) => void;
+  onSelectedCountChange?: (count: number) => void;
+  onPublishingAllChange?: (publishing: boolean) => void;
   onRefreshingChange?: (refreshing: boolean) => void;
   ref?: Ref<WebResourceListHandle>;
 }
@@ -86,6 +97,9 @@ export function WebResourceList({
   modifiedPaths,
   onFilePublished,
   onActiveFilterOrSortChange,
+  onModifiedCountChange,
+  onSelectedCountChange,
+  onPublishingAllChange,
   onRefreshingChange,
   ref,
 }: Props) {
@@ -96,6 +110,8 @@ export function WebResourceList({
   const [sort, setSort] = useState<SortState>(null);
   const [links, setLinks] = useState<ResourceLink[]>([]);
   const [modifiedStatus, setModifiedStatus] = useState<Map<string, boolean>>(new Map());
+  const [publishAllError, setPublishAllError] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [detailsId, setDetailsId] = useState<string | null>(null);
 
   const refreshLinks = useCallback(() => {
@@ -147,6 +163,75 @@ export function WebResourceList({
     [onFilePublished]
   );
 
+  const modifiedCount = useMemo(
+    () => [...modifiedStatus.values()].filter(Boolean).length,
+    [modifiedStatus]
+  );
+
+  useEffect(() => {
+    onModifiedCountChange?.(modifiedCount);
+  }, [modifiedCount, onModifiedCountChange]);
+
+  useEffect(() => {
+    onSelectedCountChange?.(selectedIds.size);
+  }, [selectedIds, onSelectedCountChange]);
+
+  /** Updates local-linked content for the given resources (in parallel) and publishes
+   * everything that either updated successfully or has no local link to update from. */
+  async function publishResources(webresourceIds: string[]) {
+    if (webresourceIds.length === 0) return;
+    const idSet = new Set(webresourceIds);
+    const linked = links.filter((l) => idSet.has(l.webresourceId));
+    onPublishingAllChange?.(true);
+    setPublishAllError(null);
+    try {
+      const results = await Promise.allSettled(
+        linked.map(async (link) => {
+          const content = await getLocalFileContent(link.localPath);
+          await updateWebResourceContent(orgApiUrl, link.webresourceId, utf8ToBase64(content));
+          return link;
+        })
+      );
+      const failedIds = new Set<string>();
+      const failedNames: string[] = [];
+      const succeededLinks: ResourceLink[] = [];
+      results.forEach((result, index) => {
+        if (result.status === "fulfilled") succeededLinks.push(result.value);
+        else {
+          failedIds.add(linked[index].webresourceId);
+          failedNames.push(linked[index].webresourceName);
+        }
+      });
+      const toPublish = webresourceIds.filter((id) => !failedIds.has(id));
+      if (toPublish.length > 0) {
+        await publishWebResources(orgApiUrl, toPublish);
+        setModifiedStatus((prev) => {
+          const next = new Map(prev);
+          for (const id of toPublish) next.set(id, false);
+          return next;
+        });
+        succeededLinks.forEach((l) => onFilePublished(l.localPath));
+      }
+      if (failedNames.length > 0) {
+        setPublishAllError(`Failed to update: ${failedNames.join(", ")}`);
+      }
+    } catch (err) {
+      setPublishAllError((err as Error).message);
+    } finally {
+      onPublishingAllChange?.(false);
+    }
+  }
+
+  async function publishAll() {
+    const toPublish = links.filter((l) => modifiedStatus.get(l.webresourceId)).map((l) => l.webresourceId);
+    await publishResources(toPublish);
+  }
+
+  async function publishSelected() {
+    await publishResources([...selectedIds]);
+    setSelectedIds(new Set());
+  }
+
   // Persisted per-solution so switching solutions doesn't show another solution's filters,
   // but returning to one you've already filtered restores it. Read via a ref inside the
   // solution-switch effect below so that effect only fires on an actual solution switch, not
@@ -193,6 +278,8 @@ export function WebResourceList({
       setDraftFilters(EMPTY_FILTERS);
       setSort(null);
     },
+    publishAll,
+    publishSelected,
     refreshAll,
   }));
 
@@ -257,16 +344,53 @@ export function WebResourceList({
     });
   }
 
+  const toggleSelected = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const allDisplayedSelected =
+    displayedResources.length > 0 && displayedResources.every((r) => selectedIds.has(r.webresourceid));
+  const someDisplayedSelected = displayedResources.some((r) => selectedIds.has(r.webresourceid));
+
+  function toggleSelectAllDisplayed() {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (allDisplayedSelected) {
+        displayedResources.forEach((r) => next.delete(r.webresourceid));
+      } else {
+        displayedResources.forEach((r) => next.add(r.webresourceid));
+      }
+      return next;
+    });
+  }
+
   if (error) return <Text style={{ color: tokens.colorPaletteRedForeground1 }}>{error}</Text>;
   if (!resources) return <Spinner label="Loading web resources..." />;
   if (resources.length === 0) return <Text>No web resources found in this solution.</Text>;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
+      {publishAllError && (
+        <Text className="mb-2 block" style={{ color: tokens.colorPaletteRedForeground1 }}>
+          {publishAllError}
+        </Text>
+      )}
       <div className="min-h-0 flex-1 overflow-auto">
         <Table className="w-full table-fixed min-w-[800px]">
           <TableHeader className="sticky top-0 z-10" style={{ background: tokens.colorNeutralBackground1 }}>
             <TableRow>
+              <TableHeaderCell className="w-10">
+                <Checkbox
+                  checked={allDisplayedSelected ? true : someDisplayedSelected ? "mixed" : false}
+                  onChange={toggleSelectAllDisplayed}
+                  aria-label="Select all web resources"
+                />
+              </TableHeaderCell>
               <TableHeaderCell className="w-1/4">
                 <HeaderContent label="Name">
                   <ColumnHeaderMenu
@@ -379,6 +503,8 @@ export function WebResourceList({
               <WebResourceRow
                 key={r.webresourceid}
                 resource={r}
+                isSelected={selectedIds.has(r.webresourceid)}
+                onToggleSelected={toggleSelected}
                 onShowDetails={setDetailsId}
                 orgApiUrl={orgApiUrl}
                 environmentId={environmentId}
@@ -392,7 +518,7 @@ export function WebResourceList({
             ))}
             {displayedResources.length === 0 && (
               <TableRow>
-                <TableCell colSpan={5}>
+                <TableCell colSpan={6}>
                   <Text>No web resources match the current filters.</Text>
                 </TableCell>
               </TableRow>

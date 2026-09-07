@@ -12,6 +12,7 @@ import {
 import {
   AppsListDetailRegular,
   ArrowSyncRegular,
+  CloudArrowUpRegular,
   CloudRegular,
   DocumentBulletListRegular,
   FolderRegular,
@@ -53,6 +54,9 @@ function App({ isDark, onToggleTheme }: Props) {
   const [environmentBarOpen, setEnvironmentBarOpen] = useState(false);
   const [solutionBarOpen, setSolutionBarOpen] = useState(false);
   const [hasActiveWebResourceFilters, setHasActiveWebResourceFilters] = useState(false);
+  const [modifiedCount, setModifiedCount] = useState(0);
+  const [selectedCount, setSelectedCount] = useState(0);
+  const [publishingAll, setPublishingAll] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const webResourceListRef = useRef<WebResourceListHandle>(null);
   const workspaceFiles = useWorkspaceFiles();
@@ -221,6 +225,26 @@ function App({ isDark, onToggleTheme }: Props) {
             title="Web resources"
             action={
               <div className="flex gap-2">
+                {selectedCount > 0 && (
+                  <Button
+                    appearance="primary"
+                    icon={<CloudArrowUpRegular />}
+                    onClick={() => webResourceListRef.current?.publishSelected()}
+                    disabled={publishingAll}
+                  >
+                    {publishingAll ? "Publishing..." : `Publish Selected (${selectedCount})`}
+                  </Button>
+                )}
+                {modifiedCount > 0 && (
+                  <Button
+                    appearance={selectedCount > 0 ? "secondary" : "primary"}
+                    icon={<CloudArrowUpRegular />}
+                    onClick={() => webResourceListRef.current?.publishAll()}
+                    disabled={publishingAll}
+                  >
+                    {publishingAll ? "Publishing..." : `Publish All (${modifiedCount})`}
+                  </Button>
+                )}
                 {hasActiveWebResourceFilters && (
                   <Button
                     appearance="subtle"
@@ -233,7 +257,7 @@ function App({ isDark, onToggleTheme }: Props) {
                   appearance="secondary"
                   icon={<ArrowSyncRegular />}
                   onClick={() => webResourceListRef.current?.refreshAll()}
-                  disabled={refreshing}
+                  disabled={refreshing || publishingAll}
                 >
                   {refreshing ? "Refreshing..." : "Refresh"}
                 </Button>
@@ -250,6 +274,9 @@ function App({ isDark, onToggleTheme }: Props) {
               modifiedPaths={workspaceFiles.modifiedPaths}
               onFilePublished={workspaceFiles.clearModified}
               onActiveFilterOrSortChange={setHasActiveWebResourceFilters}
+              onModifiedCountChange={setModifiedCount}
+              onSelectedCountChange={setSelectedCount}
+              onPublishingAllChange={setPublishingAll}
               onRefreshingChange={setRefreshing}
             />
           </SectionCard>

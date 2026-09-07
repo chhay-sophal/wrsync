@@ -1,4 +1,4 @@
-import { Button, TableCell, TableCellLayout, TableRow } from "@fluentui/react-components";
+import { Button, Checkbox, TableCell, TableCellLayout, TableRow } from "@fluentui/react-components";
 import { InfoRegular } from "@fluentui/react-icons";
 import { memo } from "react";
 import type { LocalFile, ResourceLink } from "../../api/local";
@@ -8,6 +8,8 @@ import { TYPE_LABELS } from "./webResourceTypes";
 
 interface Props {
   resource: WebResource;
+  isSelected: boolean;
+  onToggleSelected: (id: string) => void;
   onShowDetails: (id: string) => void;
   orgApiUrl: string;
   environmentId: string;
@@ -19,9 +21,12 @@ interface Props {
   onPublished: (webresourceId: string, localPath: string) => void;
 }
 
-/** Memoized so that editing filters/sort doesn't force every row to re-render too. */
+/** Memoized so that editing one row (selection, linking, publishing) doesn't force every
+ * other row in the table to re-render too. */
 function WebResourceRowImpl({
   resource: r,
+  isSelected,
+  onToggleSelected,
   onShowDetails,
   orgApiUrl,
   environmentId,
@@ -33,7 +38,14 @@ function WebResourceRowImpl({
   onPublished,
 }: Props) {
   return (
-    <TableRow>
+    <TableRow appearance={isSelected ? "brand" : "none"}>
+      <TableCell>
+        <Checkbox
+          checked={isSelected}
+          onChange={() => onToggleSelected(r.webresourceid)}
+          aria-label={`Select ${r.name}`}
+        />
+      </TableCell>
       <TableCell>
         <div className="flex min-w-0 items-center justify-between gap-1">
           <TableCellLayout truncate title={r.name} className="min-w-0 flex-1">
