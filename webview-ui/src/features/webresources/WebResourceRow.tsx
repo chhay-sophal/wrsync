@@ -16,7 +16,7 @@ interface Props {
   link: ResourceLink | undefined;
   isModified: boolean;
   onLinksChanged: () => void;
-  onPublished: (webresourceId: string) => void;
+  onPublished: (webresourceId: string, localPath: string) => void;
 }
 
 /** Memoized so that editing filters/sort doesn't force every row to re-render too. */

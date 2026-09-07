@@ -247,6 +247,8 @@ function App({ isDark, onToggleTheme }: Props) {
               environmentId={environment.id}
               solutionUniqueName={solution.uniquename}
               localFiles={workspaceFiles.files}
+              modifiedPaths={workspaceFiles.modifiedPaths}
+              onFilePublished={workspaceFiles.clearModified}
               onActiveFilterOrSortChange={setHasActiveWebResourceFilters}
               onRefreshingChange={setRefreshing}
             />

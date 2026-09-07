@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'node:fs';
 import type { WebResource } from './dataverseClient';
+import { watchWorkspaceFiles } from './fileWatcher';
 import { dispatchRpc } from './rpc';
 
 let extensionUri: vscode.Uri;
@@ -53,7 +54,12 @@ export function openPanel(): Promise<vscode.WebviewPanel> {
 
 	panel.webview.html = getHtml(panel.webview, webviewUiDist);
 
+	const watcher = watchWorkspaceFiles((event) => {
+		panel.webview.postMessage({ type: 'fileEvent', event });
+	});
+
 	panel.onDidDispose(() => {
+		watcher.dispose();
 		currentPanel = undefined;
 		readyPromise = undefined;
 	});

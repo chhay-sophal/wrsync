@@ -18,7 +18,7 @@ interface Props {
    * "Publish All" action. */
   isModified: boolean;
   onLinksChanged: () => void;
-  onPublished: (webresourceId: string) => void;
+  onPublished: (webresourceId: string, localPath: string) => void;
 }
 
 export function LocalFileLink({
@@ -77,7 +77,7 @@ export function LocalFileLink({
       const content = await getLocalFileContent(link.localPath);
       await updateWebResourceContent(orgApiUrl, webresourceId, utf8ToBase64(content));
       await publishWebResources(orgApiUrl, [webresourceId]);
-      onPublished(webresourceId);
+      onPublished(webresourceId, link.localPath);
     } catch (err) {
       setError((err as Error).message);
     } finally {

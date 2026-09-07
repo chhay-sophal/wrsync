@@ -70,6 +70,8 @@ interface Props {
   environmentId: string;
   solutionUniqueName: string;
   localFiles: LocalFile[];
+  modifiedPaths: Set<string>;
+  onFilePublished: (localPath: string) => void;
   onActiveFilterOrSortChange?: (active: boolean) => void;
   onRefreshingChange?: (refreshing: boolean) => void;
   ref?: Ref<WebResourceListHandle>;
@@ -81,6 +83,8 @@ export function WebResourceList({
   environmentId,
   solutionUniqueName,
   localFiles,
+  modifiedPaths,
+  onFilePublished,
   onActiveFilterOrSortChange,
   onRefreshingChange,
   ref,
@@ -119,17 +123,29 @@ export function WebResourceList({
   );
 
   // Full check whenever the linked-files list changes (initial load, solution switch, or a
-  // link was just created/removed). No file-watching yet, so unlike the original app there's
-  // no incremental re-check when a watched local file changes on disk.
+  // link was just created/removed).
   useEffect(() => {
     links.forEach((link) => {
       checkOneModified(link);
     });
   }, [links, checkOneModified]);
 
-  const handleRowPublished = useCallback((webresourceId: string) => {
-    setModifiedStatus((prev) => new Map(prev).set(webresourceId, false));
-  }, []);
+  // Incremental re-check when a watched local file changes.
+  useEffect(() => {
+    for (const link of links) {
+      if (modifiedPaths.has(link.localPath)) {
+        checkOneModified(link);
+      }
+    }
+  }, [modifiedPaths, links, checkOneModified]);
+
+  const handleRowPublished = useCallback(
+    (webresourceId: string, localPath: string) => {
+      setModifiedStatus((prev) => new Map(prev).set(webresourceId, false));
+      onFilePublished(localPath);
+    },
+    [onFilePublished]
+  );
 
   // Persisted per-solution so switching solutions doesn't show another solution's filters,
   // but returning to one you've already filtered restores it. Read via a ref inside the

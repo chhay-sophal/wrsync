@@ -7,8 +7,16 @@ export interface LocalFile {
 	mtimeMs: number;
 }
 
-const INCLUDE_GLOB = '**/*.{html,htm,js,css,xml,svg,resx}';
+export const INCLUDE_GLOB = '**/*.{html,htm,js,css,xml,svg,resx}';
 const EXCLUDE_GLOB = '**/{node_modules,.git,dist,out}/**';
+const EXCLUDE_SEGMENTS = new Set(['node_modules', '.git', 'dist', 'out']);
+
+/** createFileSystemWatcher() has no separate exclude-glob parameter (unlike findFiles()), so
+ * the watcher filters matches against this instead, keeping the same exclusions as
+ * EXCLUDE_GLOB above. */
+export function isExcludedPath(relativePath: string): boolean {
+	return relativePath.split(/[\\/]/).some((segment) => EXCLUDE_SEGMENTS.has(segment));
+}
 
 /**
  * Lists web-resource-shaped files in the first open workspace folder. Unlike the original
