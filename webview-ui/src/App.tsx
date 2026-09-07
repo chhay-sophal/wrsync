@@ -11,17 +11,25 @@ import {
 } from "@fluentui/react-components";
 import {
   AppsListDetailRegular,
+  ArrowSyncRegular,
   CloudRegular,
+  DocumentBulletListRegular,
   SignOutRegular,
   WeatherMoonRegular,
   WeatherSunnyRegular,
 } from "@fluentui/react-icons";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getAuthStatus, login, logout } from "./api/auth";
 import type { DataverseEnvironment, Solution } from "./api/dataverse";
+import { SectionCard } from "./components/SectionCard";
 import { SettingsBarItem } from "./components/SettingsBarItem";
 import { EnvironmentPicker } from "./features/environments/EnvironmentPicker";
 import { SolutionPicker } from "./features/solutions/SolutionPicker";
+import {
+  FILTERS_STORAGE_KEY,
+  WebResourceList,
+  type WebResourceListHandle,
+} from "./features/webresources/WebResourceList";
 import { usePersistedState } from "./hooks/usePersistedState";
 
 interface Props {
@@ -42,6 +50,9 @@ function App({ isDark, onToggleTheme }: Props) {
   const [solution, setSolution] = usePersistedState<Solution | null>("wrsync.solution", null);
   const [environmentBarOpen, setEnvironmentBarOpen] = useState(false);
   const [solutionBarOpen, setSolutionBarOpen] = useState(false);
+  const [hasActiveWebResourceFilters, setHasActiveWebResourceFilters] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const webResourceListRef = useRef<WebResourceListHandle>(null);
 
   useEffect(() => {
     getAuthStatus()
@@ -67,6 +78,9 @@ function App({ isDark, onToggleTheme }: Props) {
     setUsername(null);
     setEnvironment(null);
     setSolution(null);
+    // Web resource filters persist across refreshes while signed in, but shouldn't outlive
+    // the session (e.g. on a shared machine).
+    localStorage.removeItem(FILTERS_STORAGE_KEY);
   }
 
   return (
@@ -147,11 +161,13 @@ function App({ isDark, onToggleTheme }: Props) {
         )}
       </div>
 
-      <main className="flex flex-1 items-center justify-center p-6">
+      <main className="mx-auto flex w-full flex-1 flex-col p-2 overflow-hidden">
         {checkingStatus ? (
-          <Spinner label="Checking sign-in status..." />
+          <div className="flex justify-center p-12">
+            <Spinner label="Checking sign-in status..." />
+          </div>
         ) : !username ? (
-          <Card className="max-w-[420px] p-6">
+          <Card className="mx-auto my-12 max-w-[420px] p-8">
             <Title2 as="h1" className="mb-5">
               Sign in to get started
             </Title2>
@@ -181,13 +197,44 @@ function App({ isDark, onToggleTheme }: Props) {
             )}
           </Card>
         ) : environment && solution ? (
-          <Text style={{ color: tokens.colorNeutralForeground3 }}>
-            {solution.friendlyname} in {environment.displayName}. The web resource list comes next.
-          </Text>
+          <SectionCard
+            icon={<DocumentBulletListRegular />}
+            title="Web resources"
+            action={
+              <div className="flex gap-2">
+                {hasActiveWebResourceFilters && (
+                  <Button
+                    appearance="subtle"
+                    onClick={() => webResourceListRef.current?.clearAllFiltersAndSort()}
+                  >
+                    Clear filters
+                  </Button>
+                )}
+                <Button
+                  appearance="secondary"
+                  icon={<ArrowSyncRegular />}
+                  onClick={() => webResourceListRef.current?.refreshAll()}
+                  disabled={refreshing}
+                >
+                  {refreshing ? "Refreshing..." : "Refresh"}
+                </Button>
+              </div>
+            }
+          >
+            <WebResourceList
+              ref={webResourceListRef}
+              orgApiUrl={environment.apiUrl}
+              solutionId={solution.solutionid}
+              onActiveFilterOrSortChange={setHasActiveWebResourceFilters}
+              onRefreshingChange={setRefreshing}
+            />
+          </SectionCard>
         ) : (
-          <Text style={{ color: tokens.colorNeutralForeground3 }}>
-            Pick an environment and solution above to see its web resources.
-          </Text>
+          <div className="flex justify-center p-16">
+            <Text style={{ color: tokens.colorNeutralForeground3 }}>
+              Pick an environment and solution above to see its web resources.
+            </Text>
+          </div>
         )}
       </main>
     </div>

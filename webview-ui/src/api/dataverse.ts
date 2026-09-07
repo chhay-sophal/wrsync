@@ -15,10 +15,33 @@ export interface Solution {
   ismanaged: boolean;
 }
 
+export interface WebResource {
+  webresourceid: string;
+  name: string;
+  displayname: string;
+  webresourcetype: number;
+  ismanaged: boolean;
+}
+
+export interface WebResourceDetails extends WebResource {
+  description: string | null;
+  languagecode: number | null;
+  createdon: string | null;
+  modifiedon: string | null;
+}
+
 export function listEnvironments(): Promise<DataverseEnvironment[]> {
   return callRpc<DataverseEnvironment[]>("dataverse.listEnvironments");
 }
 
 export function listSolutions(orgApiUrl: string): Promise<Solution[]> {
   return callRpc<Solution[]>("dataverse.listSolutions", { orgApiUrl });
+}
+
+export function listWebResourcesForSolution(orgApiUrl: string, solutionId: string): Promise<WebResource[]> {
+  return callRpc<WebResource[]>("dataverse.listWebResourcesForSolution", { orgApiUrl, solutionId });
+}
+
+export function getWebResourceDetails(orgApiUrl: string, webresourceId: string): Promise<WebResourceDetails> {
+  return callRpc<WebResourceDetails>("dataverse.getWebResourceDetails", { orgApiUrl, webresourceId });
 }

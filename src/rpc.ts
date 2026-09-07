@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { getAuthStatus, login, logout } from './auth';
-import { listEnvironments, listSolutions } from './dataverseClient';
+import { getWebResourceDetails, listEnvironments, listSolutions, listWebResourcesForSolution } from './dataverseClient';
 
 interface RpcRequest {
 	type: 'rpc';
@@ -17,6 +17,10 @@ const handlers: Record<string, Handler> = {
 	'auth.logout': () => logout(),
 	'dataverse.listEnvironments': () => listEnvironments(),
 	'dataverse.listSolutions': (params: { orgApiUrl: string }) => listSolutions(params.orgApiUrl),
+	'dataverse.listWebResourcesForSolution': (params: { orgApiUrl: string; solutionId: string }) =>
+		listWebResourcesForSolution(params.orgApiUrl, params.solutionId),
+	'dataverse.getWebResourceDetails': (params: { orgApiUrl: string; webresourceId: string }) =>
+		getWebResourceDetails(params.orgApiUrl, params.webresourceId),
 };
 
 /** Dispatches an { type: 'rpc' } message from the webview to the matching function in this
