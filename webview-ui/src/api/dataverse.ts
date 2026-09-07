@@ -61,3 +61,17 @@ export function updateWebResourceContent(
 export function publishWebResources(orgApiUrl: string, webresourceIds: string[]): Promise<void> {
   return callRpc<void>("dataverse.publishWebResources", { orgApiUrl, webresourceIds });
 }
+
+export const WEBRESOURCE_TYPES = {
+  HTML: 1,
+  CSS: 2,
+  JS: 3,
+} as const;
+
+export function createWebResource(
+  orgApiUrl: string,
+  solutionUniqueName: string,
+  resource: { name: string; displayname: string; webresourcetype: number; content: string }
+): Promise<string> {
+  return callRpc<string>("dataverse.createWebResource", { orgApiUrl, solutionUniqueName, resource });
+}

@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { getAuthStatus, login, logout } from './auth';
 import {
+	createWebResource,
 	getWebResourceContent,
 	getWebResourceDetails,
 	listEnvironments,
@@ -37,6 +38,11 @@ const handlers: Record<string, Handler> = {
 		updateWebResourceContent(params.orgApiUrl, params.webresourceId, params.base64Content),
 	'dataverse.publishWebResources': (params: { orgApiUrl: string; webresourceIds: string[] }) =>
 		publishWebResources(params.orgApiUrl, params.webresourceIds),
+	'dataverse.createWebResource': (params: {
+		orgApiUrl: string;
+		solutionUniqueName: string;
+		resource: { name: string; displayname: string; webresourcetype: number; content: string };
+	}) => createWebResource(params.orgApiUrl, params.solutionUniqueName, params.resource),
 	'workspace.listFiles': () => listWorkspaceFiles(),
 	'workspace.getFileContent': (params: { path: string }) => getWorkspaceFileContent(params.path),
 	'links.list': async () => listLinks(),

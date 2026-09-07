@@ -10,6 +10,7 @@ import {
   tokens,
 } from "@fluentui/react-components";
 import {
+  AddRegular,
   AppsListDetailRegular,
   ArrowSyncRegular,
   CloudArrowUpRegular,
@@ -253,6 +254,13 @@ function App({ isDark, onToggleTheme }: Props) {
                     Clear filters
                   </Button>
                 )}
+                <Button
+                  appearance="secondary"
+                  icon={<AddRegular />}
+                  onClick={() => webResourceListRef.current?.openCreateDialog()}
+                >
+                  Create
+                </Button>
                 <Button
                   appearance="secondary"
                   icon={<ArrowSyncRegular />}

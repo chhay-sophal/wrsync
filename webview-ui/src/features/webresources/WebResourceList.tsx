@@ -34,6 +34,7 @@ import { getLocalFileContent, listLinks, type LocalFile, type ResourceLink } fro
 import { usePersistedState } from "../../hooks/usePersistedState";
 import { base64ToUtf8, utf8ToBase64 } from "../../lib/base64";
 import { ColumnHeaderMenu, type SortDirection } from "./ColumnHeaderMenu";
+import { CreateWebResourceDialog } from "./CreateWebResourceDialog";
 import {
   deserializeFilters,
   EMPTY_FILTERS,
@@ -69,6 +70,7 @@ export interface WebResourceListHandle {
   clearAllFiltersAndSort: () => void;
   publishAll: () => Promise<void>;
   publishSelected: () => Promise<void>;
+  openCreateDialog: () => void;
   refreshAll: () => Promise<void>;
 }
 
@@ -113,6 +115,7 @@ export function WebResourceList({
   const [publishAllError, setPublishAllError] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [detailsId, setDetailsId] = useState<string | null>(null);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
   const refreshLinks = useCallback(() => {
     listLinks().then(setLinks);
@@ -280,6 +283,7 @@ export function WebResourceList({
     },
     publishAll,
     publishSelected,
+    openCreateDialog: () => setCreateDialogOpen(true),
     refreshAll,
   }));
 
@@ -305,6 +309,11 @@ export function WebResourceList({
     }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scopeKey, filters, sort]);
+
+  function handleCreated() {
+    setCreateDialogOpen(false);
+    refreshResources();
+  }
 
   const availableTypes = useMemo(() => {
     const seen = new Map<number, string>();
@@ -369,9 +378,37 @@ export function WebResourceList({
     });
   }
 
-  if (error) return <Text style={{ color: tokens.colorPaletteRedForeground1 }}>{error}</Text>;
-  if (!resources) return <Spinner label="Loading web resources..." />;
-  if (resources.length === 0) return <Text>No web resources found in this solution.</Text>;
+  const createDialog = (
+    <CreateWebResourceDialog
+      orgApiUrl={orgApiUrl}
+      solutionUniqueName={solutionUniqueName}
+      open={createDialogOpen}
+      onClose={() => setCreateDialogOpen(false)}
+      onCreated={handleCreated}
+    />
+  );
+
+  if (error)
+    return (
+      <>
+        <Text style={{ color: tokens.colorPaletteRedForeground1 }}>{error}</Text>
+        {createDialog}
+      </>
+    );
+  if (!resources)
+    return (
+      <>
+        <Spinner label="Loading web resources..." />
+        {createDialog}
+      </>
+    );
+  if (resources.length === 0)
+    return (
+      <>
+        <Text>No web resources found in this solution.</Text>
+        {createDialog}
+      </>
+    );
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -527,6 +564,7 @@ export function WebResourceList({
         </Table>
       </div>
       <WebResourceDetailsDialog orgApiUrl={orgApiUrl} webresourceId={detailsId} onClose={() => setDetailsId(null)} />
+      {createDialog}
     </div>
   );
 }
