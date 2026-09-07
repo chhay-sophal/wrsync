@@ -3,8 +3,8 @@
 Edit Power Apps (Dataverse) web resources from local files, right inside VS Code.
 
 Sign in with your Microsoft account, browse a solution's web resources, link them to
-files in your open workspace, and publish changes back to Dataverse — without leaving
-the editor.
+files in your open workspace, and publish changes back to Dataverse — from a sidebar
+view that stays open alongside the code you're editing.
 
 ## Features
 
@@ -15,7 +15,7 @@ the editor.
 - **Live change detection** — linked files are watched automatically, and a resource shows
   a "Modified" badge as soon as its local content diverges from what's published.
 - **Publish** a single resource, a selection, or everything that's changed at once.
-- **Create** new web resources directly from the panel.
+- **Create** new web resources directly from the sidebar.
 
 ## Requirements
 
@@ -26,9 +26,10 @@ the editor.
 
 ## Getting started
 
-1. Run **Web Resource Sync: Open Panel** from the Command Palette.
+1. Click the Web Resource Sync icon in the Activity Bar (the left-most vertical bar) to
+   open the sidebar view.
 2. Click **Sign in** and complete the Microsoft sign-in flow in your browser.
-3. Pick an **Environment** and **Solution** from the settings bar.
+3. Pick an **Environment** and **Solution** from the sidebar.
 4. Link a web resource to a file in your workspace, edit the file, and publish.
 
 ## Building a local .vsix
