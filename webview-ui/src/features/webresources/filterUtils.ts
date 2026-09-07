@@ -3,19 +3,19 @@ export type SortColumn = "name" | "displayname" | "type" | "managed";
 export type SortState = { column: SortColumn; direction: "asc" | "desc" } | null;
 
 export interface Filters {
-  name: string;
-  displayname: string;
+  /** Matches against name OR displayname - a single combined search box, since the sidebar's
+   * narrow width has no room for the original app's two separate per-column text filters. */
+  search: string;
   types: Set<number>;
   managed: ManagedFilter;
 }
 
-export const EMPTY_FILTERS: Filters = { name: "", displayname: "", types: new Set(), managed: "all" };
+export const EMPTY_FILTERS: Filters = { search: "", types: new Set(), managed: "all" };
 
 /** localStorage can't hold a Set directly, so filters get flattened to a plain array for
  * persistence and rebuilt into a Set on the way back out. */
 export interface SerializedFilters {
-  name: string;
-  displayname: string;
+  search: string;
   types: number[];
   managed: ManagedFilter;
 }
@@ -33,8 +33,15 @@ export function serializeFilters(f: Filters): SerializedFilters {
   return { ...f, types: [...f.types] };
 }
 
-export function deserializeFilters(s: SerializedFilters): Filters {
-  return { ...s, types: new Set(s.types) };
+/** Guards against a persisted entry from before the two-field name/displayname filter was
+ * combined into a single search box - old data has no `search` key, which would otherwise
+ * flow through as `undefined` and crash matchesText()'s .trim() call. */
+export function deserializeFilters(s: Partial<SerializedFilters>): Filters {
+  return {
+    search: s.search ?? "",
+    types: new Set(s.types ?? []),
+    managed: s.managed ?? "all",
+  };
 }
 
 /** Matches `pattern` against `value`. Plain text is a case-insensitive "contains" match;

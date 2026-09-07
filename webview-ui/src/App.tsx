@@ -208,12 +208,12 @@ function App({ isDark, onToggleTheme }: Props) {
               {signingIn ? "Waiting for browser sign-in..." : "Sign in"}
             </Button>
             {signingIn && (
-              <Text size={200} className="mt-2 block">
+              <Text block size={200} className="mt-2">
                 A browser window has opened to sign in with your Microsoft account.
               </Text>
             )}
             {authError && (
-              <Text className="mt-2 block" style={{ color: tokens.colorPaletteRedForeground1 }}>
+              <Text block className="mt-2" style={{ color: tokens.colorPaletteRedForeground1 }}>
                 {authError}
               </Text>
             )}
