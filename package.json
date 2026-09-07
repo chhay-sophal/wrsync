@@ -34,16 +34,26 @@
       {
         "command": "wrsync.browseWebResources",
         "title": "Web Resource Sync: Browse Web Resources"
-      },
-      {
-        "command": "wrsync.openPanel",
-        "title": "Web Resource Sync: Open Panel"
-      },
-      {
-        "command": "wrsync.browseInPanel",
-        "title": "Web Resource Sync: Browse Web Resources In Panel"
       }
-    ]
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "wrsync",
+          "title": "Web Resource Sync",
+          "icon": "media/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "wrsync": [
+        {
+          "id": "wrsync.sidebar",
+          "name": "Web Resource Sync",
+          "type": "webview"
+        }
+      ]
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run package",
