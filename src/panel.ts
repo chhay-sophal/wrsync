@@ -1,5 +1,14 @@
 import * as vscode from 'vscode';
+import * as fs from 'node:fs';
 import type { WebResource } from './dataverseClient';
+
+let extensionUri: vscode.Uri;
+
+/** Captures the extension's install location so getHtml() can later resolve the
+ * webview-ui build output on disk. Must be called once from activate(). */
+export function initPanel(context: vscode.ExtensionContext): void {
+	extensionUri = context.extensionUri;
+}
 
 let currentPanel: vscode.WebviewPanel | undefined;
 /** Resolves once the current panel's webview script has loaded and is listening for
@@ -15,11 +24,13 @@ export function openPanel(): Promise<vscode.WebviewPanel> {
 		return Promise.resolve(currentPanel);
 	}
 
+	const webviewUiDist = vscode.Uri.joinPath(extensionUri, 'webview-ui', 'dist');
+
 	const panel = vscode.window.createWebviewPanel(
 		'wrsyncMain',
 		'Web Resource Sync',
 		vscode.ViewColumn.One,
-		{ enableScripts: true }
+		{ enableScripts: true, localResourceRoots: [webviewUiDist] }
 	);
 	currentPanel = panel;
 
@@ -35,7 +46,7 @@ export function openPanel(): Promise<vscode.WebviewPanel> {
 		});
 	});
 
-	panel.webview.html = getHtml();
+	panel.webview.html = getHtml(panel.webview, webviewUiDist);
 
 	panel.onDidDispose(() => {
 		currentPanel = undefined;
@@ -53,52 +64,28 @@ export async function showWebResources(resources: WebResource[]): Promise<void> 
 	currentPanel.webview.postMessage({ type: 'webResources', resources });
 }
 
-function getHtml(): string {
-	return /* html */ `<!DOCTYPE html>
-<html lang="en">
-<head>
-	<meta charset="UTF-8" />
-	<title>Web Resource Sync</title>
-	<style>
-		body { font-family: var(--vscode-font-family); color: var(--vscode-foreground); }
-		li { cursor: pointer; padding: 2px 0; }
-		li:hover { text-decoration: underline; }
-	</style>
-</head>
-<body>
-	<h1>Web Resource Sync</h1>
-	<p id="status">Waiting for a web resource list…</p>
-	<ul id="list"></ul>
+/** Loads the built webview-ui/dist/index.html, rewrites its relative asset references
+ * into webview.asWebviewUri() URIs, and injects a CSP restricting content to that dist
+ * folder plus inline styles (Vite's built CSS is linked, not inlined, but React itself
+ * sets inline style attributes at runtime). */
+function getHtml(webview: vscode.Webview, webviewUiDist: vscode.Uri): string {
+	const indexPath = vscode.Uri.joinPath(webviewUiDist, 'index.html').fsPath;
+	let html = fs.readFileSync(indexPath, 'utf-8');
 
-	<script>
-		const vscodeApi = acquireVsCodeApi();
-		const statusEl = document.getElementById('status');
-		const listEl = document.getElementById('list');
+	html = html.replace(/(src|href)="\.\/(.*?)"/g, (_match, attr: string, relativePath: string) => {
+		const assetUri = webview.asWebviewUri(vscode.Uri.joinPath(webviewUiDist, relativePath));
+		return `${attr}="${assetUri.toString()}"`;
+	});
 
-		window.addEventListener('message', (event) => {
-			const message = event.data;
-			if (message.type === 'webResources') {
-				renderList(message.resources);
-			}
-		});
+	const csp = [
+		`default-src 'none'`,
+		`img-src ${webview.cspSource} https: data:`,
+		`style-src ${webview.cspSource} 'unsafe-inline'`,
+		`script-src ${webview.cspSource}`,
+		`font-src ${webview.cspSource}`,
+	].join('; ');
 
-		function renderList(resources) {
-			statusEl.textContent = resources.length + ' web resource(s):';
-			listEl.innerHTML = '';
-			for (const r of resources) {
-				const li = document.createElement('li');
-				li.textContent = r.name + ' — ' + r.displayname;
-				li.addEventListener('click', () => {
-					vscodeApi.postMessage({ type: 'resourcePicked', id: r.webresourceid, name: r.name });
-				});
-				listEl.appendChild(li);
-			}
-		}
+	html = html.replace('<head>', `<head>\n\t<meta http-equiv="Content-Security-Policy" content="${csp}" />`);
 
-		// Tell the extension we've loaded and are ready to receive messages - sent last,
-		// after the listener above is already registered.
-		vscodeApi.postMessage({ type: 'ready' });
-	</script>
-</body>
-</html>`;
+	return html;
 }
