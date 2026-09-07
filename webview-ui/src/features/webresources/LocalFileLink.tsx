@@ -88,37 +88,33 @@ export function LocalFileLink({
   return (
     <div className="flex min-w-0 flex-col gap-1">
       {link ? (
-        <div className="flex min-w-0 items-center gap-1.5">
-          <Text size={200} title={link.localPath} className="min-w-0 flex-1 truncate">
+        <div className="flex min-w-0 flex-col gap-1">
+          <Text size={200} title={link.localPath} className="min-w-0 truncate">
             {link.localPath}
           </Text>
-          {isModified && (
-            <Badge color="warning" className="shrink-0">
-              Modified
-            </Badge>
-          )}
-          {isModified && (
+          <div className="flex flex-wrap items-center gap-1.5">
+            {isModified && <Badge color="warning">Modified</Badge>}
+            {isModified && (
+              <Button
+                size="small"
+                appearance="primary"
+                icon={<CloudArrowUpRegular />}
+                onClick={handlePublish}
+                disabled={busy}
+              >
+                Publish
+              </Button>
+            )}
             <Button
               size="small"
-              appearance="primary"
-              icon={<CloudArrowUpRegular />}
-              onClick={handlePublish}
+              appearance="subtle"
+              icon={<LinkDismissRegular />}
+              onClick={handleUnlink}
               disabled={busy}
-              className="shrink-0"
             >
-              Publish
+              Unlink
             </Button>
-          )}
-          <Button
-            size="small"
-            appearance="subtle"
-            icon={<LinkDismissRegular />}
-            onClick={handleUnlink}
-            disabled={busy}
-            className="shrink-0"
-          >
-            Unlink
-          </Button>
+          </div>
         </div>
       ) : (
         <Dropdown

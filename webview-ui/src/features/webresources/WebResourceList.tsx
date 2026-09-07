@@ -1,18 +1,4 @@
-import {
-  Checkbox,
-  Input,
-  Radio,
-  RadioGroup,
-  Spinner,
-  Table,
-  TableBody,
-  TableCell,
-  TableHeader,
-  TableHeaderCell,
-  TableRow,
-  Text,
-  tokens,
-} from "@fluentui/react-components";
+import { Checkbox, Spinner, Text, tokens } from "@fluentui/react-components";
 import {
   useCallback,
   useEffect,
@@ -20,7 +6,6 @@ import {
   useMemo,
   useRef,
   useState,
-  type ReactNode,
   type Ref,
 } from "react";
 import {
@@ -33,7 +18,6 @@ import {
 import { getLocalFileContent, listLinks, type LocalFile, type ResourceLink } from "../../api/local";
 import { usePersistedState } from "../../hooks/usePersistedState";
 import { base64ToUtf8, utf8ToBase64 } from "../../lib/base64";
-import { ColumnHeaderMenu, type SortDirection } from "./ColumnHeaderMenu";
 import { CreateWebResourceDialog } from "./CreateWebResourceDialog";
 import {
   deserializeFilters,
@@ -42,13 +26,13 @@ import {
   matchesText,
   serializeFilters,
   type Filters,
-  type ManagedFilter,
   type PersistedFilterEntry,
   type SortColumn,
   type SortState,
 } from "./filterUtils";
+import { WebResourceCard } from "./WebResourceCard";
 import { WebResourceDetailsDialog } from "./WebResourceDetailsDialog";
-import { WebResourceRow } from "./WebResourceRow";
+import { WebResourceToolbar } from "./WebResourceToolbar";
 import { TYPE_LABELS } from "./webResourceTypes";
 
 export { FILTERS_STORAGE_KEY };
@@ -108,7 +92,6 @@ export function WebResourceList({
   const [resources, setResources] = useState<WebResource[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
-  const [draftFilters, setDraftFilters] = useState<Filters>(EMPTY_FILTERS);
   const [sort, setSort] = useState<SortState>(null);
   const [links, setLinks] = useState<ResourceLink[]>([]);
   const [modifiedStatus, setModifiedStatus] = useState<Map<string, boolean>>(new Map());
@@ -158,7 +141,7 @@ export function WebResourceList({
     }
   }, [modifiedPaths, links, checkOneModified]);
 
-  const handleRowPublished = useCallback(
+  const handleCardPublished = useCallback(
     (webresourceId: string, localPath: string) => {
       setModifiedStatus((prev) => new Map(prev).set(webresourceId, false));
       onFilePublished(localPath);
@@ -250,11 +233,7 @@ export function WebResourceList({
   const scopeKey = `${orgApiUrl}::${solutionId}`;
 
   const hasActiveFilterOrSort =
-    sort !== null ||
-    filters.name !== "" ||
-    filters.displayname !== "" ||
-    filters.types.size > 0 ||
-    filters.managed !== "all";
+    sort !== null || filters.search !== "" || filters.types.size > 0 || filters.managed !== "all";
 
   useEffect(() => {
     onActiveFilterOrSortChange?.(hasActiveFilterOrSort);
@@ -278,7 +257,6 @@ export function WebResourceList({
   useImperativeHandle(ref, () => ({
     clearAllFiltersAndSort: () => {
       setFilters(EMPTY_FILTERS);
-      setDraftFilters(EMPTY_FILTERS);
       setSort(null);
     },
     publishAll,
@@ -290,9 +268,7 @@ export function WebResourceList({
   useEffect(() => {
     setResources(null);
     const saved = persistedFiltersRef.current[scopeKey];
-    const restoredFilters = saved ? deserializeFilters(saved.filters) : EMPTY_FILTERS;
-    setFilters(restoredFilters);
-    setDraftFilters(restoredFilters);
+    setFilters(saved ? deserializeFilters(saved.filters) : EMPTY_FILTERS);
     setSort(saved ? saved.sort : null);
     refreshResources();
     // scopeKey is derived from orgApiUrl/solutionId, which are already deps; persistedFiltersRef
@@ -301,7 +277,7 @@ export function WebResourceList({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orgApiUrl, solutionId, refreshResources]);
 
-  // Persist the applied (not draft) filters/sort for this solution whenever they change.
+  // Persist the applied filters/sort for this solution whenever they change.
   useEffect(() => {
     setPersistedFilters((prev) => ({
       ...prev,
@@ -328,8 +304,7 @@ export function WebResourceList({
   const displayedResources = useMemo(() => {
     let list = (resources ?? []).filter(
       (r) =>
-        matchesText(r.name, filters.name) &&
-        matchesText(r.displayname, filters.displayname) &&
+        (matchesText(r.name, filters.search) || matchesText(r.displayname, filters.search)) &&
         (filters.types.size === 0 || filters.types.has(r.webresourcetype)) &&
         (filters.managed === "all" || (filters.managed === "managed") === r.ismanaged)
     );
@@ -339,19 +314,6 @@ export function WebResourceList({
     }
     return list;
   }, [resources, filters, sort]);
-
-  function sortDirectionFor(column: SortColumn): SortDirection {
-    return sort?.column === column ? sort.direction : null;
-  }
-
-  function toggleDraftType(code: number) {
-    setDraftFilters((f) => {
-      const types = new Set(f.types);
-      if (types.has(code)) types.delete(code);
-      else types.add(code);
-      return { ...f, types };
-    });
-  }
 
   const toggleSelected = useCallback((id: string) => {
     setSelectedIds((prev) => {
@@ -411,169 +373,51 @@ export function WebResourceList({
     );
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
+    <div className="flex min-h-0 flex-1 flex-col gap-2">
       {publishAllError && (
-        <Text className="mb-2 block" style={{ color: tokens.colorPaletteRedForeground1 }}>
+        <Text block style={{ color: tokens.colorPaletteRedForeground1 }}>
           {publishAllError}
         </Text>
       )}
-      <div className="min-h-0 flex-1 overflow-auto">
-        <Table className="w-full table-fixed min-w-[800px]">
-          <TableHeader className="sticky top-0 z-10" style={{ background: tokens.colorNeutralBackground1 }}>
-            <TableRow>
-              <TableHeaderCell className="w-10">
-                <Checkbox
-                  checked={allDisplayedSelected ? true : someDisplayedSelected ? "mixed" : false}
-                  onChange={toggleSelectAllDisplayed}
-                  aria-label="Select all web resources"
-                />
-              </TableHeaderCell>
-              <TableHeaderCell className="w-1/4">
-                <HeaderContent label="Name">
-                  <ColumnHeaderMenu
-                    active={sortDirectionFor("name") !== null || filters.name !== ""}
-                    sortDirection={sortDirectionFor("name")}
-                    onSort={(direction) => setSort(direction ? { column: "name", direction } : null)}
-                    onOpenChange={(open) => open && setDraftFilters(filters)}
-                    onApply={() => setFilters(draftFilters)}
-                    onClear={() => {
-                      setFilters((f) => ({ ...f, name: "" }));
-                      setDraftFilters((f) => ({ ...f, name: "" }));
-                      setSort((s) => (s?.column === "name" ? null : s));
-                    }}
-                  >
-                    <Input
-                      size="small"
-                      value={draftFilters.name}
-                      onChange={(_, data) => setDraftFilters((f) => ({ ...f, name: data.value }))}
-                      placeholder="e.g. *_form or contact"
-                    />
-                  </ColumnHeaderMenu>
-                </HeaderContent>
-              </TableHeaderCell>
-              <TableHeaderCell className="w-1/4">
-                <HeaderContent label="Display Name">
-                  <ColumnHeaderMenu
-                    active={sortDirectionFor("displayname") !== null || filters.displayname !== ""}
-                    sortDirection={sortDirectionFor("displayname")}
-                    onSort={(direction) =>
-                      setSort(direction ? { column: "displayname", direction } : null)
-                    }
-                    onOpenChange={(open) => open && setDraftFilters(filters)}
-                    onApply={() => setFilters(draftFilters)}
-                    onClear={() => {
-                      setFilters((f) => ({ ...f, displayname: "" }));
-                      setDraftFilters((f) => ({ ...f, displayname: "" }));
-                      setSort((s) => (s?.column === "displayname" ? null : s));
-                    }}
-                  >
-                    <Input
-                      size="small"
-                      value={draftFilters.displayname}
-                      onChange={(_, data) => setDraftFilters((f) => ({ ...f, displayname: data.value }))}
-                      placeholder="e.g. Contact*"
-                    />
-                  </ColumnHeaderMenu>
-                </HeaderContent>
-              </TableHeaderCell>
-              <TableHeaderCell className="w-[15%]">
-                <HeaderContent label="Type">
-                  <ColumnHeaderMenu
-                    active={sortDirectionFor("type") !== null || filters.types.size > 0}
-                    sortDirection={sortDirectionFor("type")}
-                    onSort={(direction) => setSort(direction ? { column: "type", direction } : null)}
-                    onOpenChange={(open) => open && setDraftFilters(filters)}
-                    onApply={() => setFilters(draftFilters)}
-                    onClear={() => {
-                      setFilters((f) => ({ ...f, types: new Set() }));
-                      setDraftFilters((f) => ({ ...f, types: new Set() }));
-                      setSort((s) => (s?.column === "type" ? null : s));
-                    }}
-                  >
-                    <div className="flex flex-col gap-1">
-                      {availableTypes.map(([code, label]) => (
-                        <Checkbox
-                          key={code}
-                          label={label}
-                          checked={draftFilters.types.has(code)}
-                          onChange={() => toggleDraftType(code)}
-                        />
-                      ))}
-                    </div>
-                  </ColumnHeaderMenu>
-                </HeaderContent>
-              </TableHeaderCell>
-              <TableHeaderCell className="w-[15%]">
-                <HeaderContent label="Managed">
-                  <ColumnHeaderMenu
-                    active={sortDirectionFor("managed") !== null || filters.managed !== "all"}
-                    sortDirection={sortDirectionFor("managed")}
-                    onSort={(direction) => setSort(direction ? { column: "managed", direction } : null)}
-                    onOpenChange={(open) => open && setDraftFilters(filters)}
-                    onApply={() => setFilters(draftFilters)}
-                    onClear={() => {
-                      setFilters((f) => ({ ...f, managed: "all" }));
-                      setDraftFilters((f) => ({ ...f, managed: "all" }));
-                      setSort((s) => (s?.column === "managed" ? null : s));
-                    }}
-                  >
-                    <RadioGroup
-                      value={draftFilters.managed}
-                      onChange={(_, data) =>
-                        setDraftFilters((f) => ({ ...f, managed: data.value as ManagedFilter }))
-                      }
-                    >
-                      <Radio value="all" label="All" />
-                      <Radio value="managed" label="Managed" />
-                      <Radio value="unmanaged" label="Unmanaged" />
-                    </RadioGroup>
-                  </ColumnHeaderMenu>
-                </HeaderContent>
-              </TableHeaderCell>
-              <TableHeaderCell className="w-1/4">
-                <div className="font-bold">Local File</div>
-              </TableHeaderCell>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {displayedResources.map((r) => (
-              <WebResourceRow
-                key={r.webresourceid}
-                resource={r}
-                isSelected={selectedIds.has(r.webresourceid)}
-                onToggleSelected={toggleSelected}
-                onShowDetails={setDetailsId}
-                orgApiUrl={orgApiUrl}
-                environmentId={environmentId}
-                solutionUniqueName={solutionUniqueName}
-                localFiles={localFiles}
-                link={links.find((l) => l.webresourceId === r.webresourceid)}
-                isModified={modifiedStatus.get(r.webresourceid) ?? false}
-                onLinksChanged={refreshLinks}
-                onPublished={handleRowPublished}
-              />
-            ))}
-            {displayedResources.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={6}>
-                  <Text>No web resources match the current filters.</Text>
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+
+      <WebResourceToolbar
+        filters={filters}
+        onFiltersChange={setFilters}
+        sort={sort}
+        onSortChange={setSort}
+        availableTypes={availableTypes}
+      />
+
+      <Checkbox
+        className="shrink-0"
+        checked={allDisplayedSelected ? true : someDisplayedSelected ? "mixed" : false}
+        onChange={toggleSelectAllDisplayed}
+        label={`${displayedResources.length} resource(s)`}
+      />
+
+      <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-auto">
+        {displayedResources.map((r) => (
+          <WebResourceCard
+            key={r.webresourceid}
+            resource={r}
+            isSelected={selectedIds.has(r.webresourceid)}
+            onToggleSelected={toggleSelected}
+            onShowDetails={setDetailsId}
+            orgApiUrl={orgApiUrl}
+            environmentId={environmentId}
+            solutionUniqueName={solutionUniqueName}
+            localFiles={localFiles}
+            link={links.find((l) => l.webresourceId === r.webresourceid)}
+            isModified={modifiedStatus.get(r.webresourceid) ?? false}
+            onLinksChanged={refreshLinks}
+            onPublished={handleCardPublished}
+          />
+        ))}
+        {displayedResources.length === 0 && <Text>No web resources match the current filters.</Text>}
       </div>
+
       <WebResourceDetailsDialog orgApiUrl={orgApiUrl} webresourceId={detailsId} onClose={() => setDetailsId(null)} />
       {createDialog}
-    </div>
-  );
-}
-
-function HeaderContent({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div className="flex items-center justify-between gap-2 font-bold">
-      <span>{label}</span>
-      {children}
     </div>
   );
 }
