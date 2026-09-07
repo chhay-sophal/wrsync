@@ -6,6 +6,8 @@ import {
 	listEnvironments,
 	listSolutions,
 	listWebResourcesForSolution,
+	publishWebResources,
+	updateWebResourceContent,
 } from './dataverseClient';
 import { createLink, deleteLink, listLinks, type ResourceLink } from './linksStore';
 import { getWorkspaceFileContent, listWorkspaceFiles } from './workspaceFiles';
@@ -31,6 +33,10 @@ const handlers: Record<string, Handler> = {
 		getWebResourceDetails(params.orgApiUrl, params.webresourceId),
 	'dataverse.getWebResourceContent': (params: { orgApiUrl: string; webresourceId: string }) =>
 		getWebResourceContent(params.orgApiUrl, params.webresourceId),
+	'dataverse.updateWebResourceContent': (params: { orgApiUrl: string; webresourceId: string; base64Content: string }) =>
+		updateWebResourceContent(params.orgApiUrl, params.webresourceId, params.base64Content),
+	'dataverse.publishWebResources': (params: { orgApiUrl: string; webresourceIds: string[] }) =>
+		publishWebResources(params.orgApiUrl, params.webresourceIds),
 	'workspace.listFiles': () => listWorkspaceFiles(),
 	'workspace.getFileContent': (params: { path: string }) => getWorkspaceFileContent(params.path),
 	'links.list': async () => listLinks(),

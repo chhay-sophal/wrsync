@@ -49,3 +49,15 @@ export function getWebResourceDetails(orgApiUrl: string, webresourceId: string):
 export function getWebResourceContent(orgApiUrl: string, webresourceId: string): Promise<string> {
   return callRpc<string>("dataverse.getWebResourceContent", { orgApiUrl, webresourceId });
 }
+
+export function updateWebResourceContent(
+  orgApiUrl: string,
+  webresourceId: string,
+  base64Content: string
+): Promise<void> {
+  return callRpc<void>("dataverse.updateWebResourceContent", { orgApiUrl, webresourceId, base64Content });
+}
+
+export function publishWebResources(orgApiUrl: string, webresourceIds: string[]): Promise<void> {
+  return callRpc<void>("dataverse.publishWebResources", { orgApiUrl, webresourceIds });
+}

@@ -9,24 +9,28 @@ import { TYPE_LABELS } from "./webResourceTypes";
 interface Props {
   resource: WebResource;
   onShowDetails: (id: string) => void;
+  orgApiUrl: string;
   environmentId: string;
   solutionUniqueName: string;
   localFiles: LocalFile[];
   link: ResourceLink | undefined;
   isModified: boolean;
   onLinksChanged: () => void;
+  onPublished: (webresourceId: string) => void;
 }
 
 /** Memoized so that editing filters/sort doesn't force every row to re-render too. */
 function WebResourceRowImpl({
   resource: r,
   onShowDetails,
+  orgApiUrl,
   environmentId,
   solutionUniqueName,
   localFiles,
   link,
   isModified,
   onLinksChanged,
+  onPublished,
 }: Props) {
   return (
     <TableRow>
@@ -59,6 +63,7 @@ function WebResourceRowImpl({
       </TableCell>
       <TableCell>
         <LocalFileLink
+          orgApiUrl={orgApiUrl}
           environmentId={environmentId}
           solutionUniqueName={solutionUniqueName}
           webresourceId={r.webresourceid}
@@ -67,6 +72,7 @@ function WebResourceRowImpl({
           link={link}
           isModified={isModified}
           onLinksChanged={onLinksChanged}
+          onPublished={onPublished}
         />
       </TableCell>
     </TableRow>

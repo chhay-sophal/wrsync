@@ -1,9 +1,12 @@
 import { Badge, Button, Dropdown, Option, Text, tokens } from "@fluentui/react-components";
-import { LinkDismissRegular, LinkRegular } from "@fluentui/react-icons";
+import { CloudArrowUpRegular, LinkDismissRegular, LinkRegular } from "@fluentui/react-icons";
 import { useState } from "react";
-import { createLink, deleteLink, type LocalFile, type ResourceLink } from "../../api/local";
+import { publishWebResources, updateWebResourceContent } from "../../api/dataverse";
+import { createLink, deleteLink, getLocalFileContent, type LocalFile, type ResourceLink } from "../../api/local";
+import { utf8ToBase64 } from "../../lib/base64";
 
 interface Props {
+  orgApiUrl: string;
   environmentId: string;
   solutionUniqueName: string;
   webresourceId: string;
@@ -11,12 +14,15 @@ interface Props {
   localFiles: LocalFile[];
   link: ResourceLink | undefined;
   /** Whether the linked local file's content currently differs from what's published in
-   * Dataverse. Publishing itself comes in a later step - for now this is informational. */
+   * Dataverse - computed by the parent, which needs this across all rows for a future
+   * "Publish All" action. */
   isModified: boolean;
   onLinksChanged: () => void;
+  onPublished: (webresourceId: string) => void;
 }
 
 export function LocalFileLink({
+  orgApiUrl,
   environmentId,
   solutionUniqueName,
   webresourceId,
@@ -25,6 +31,7 @@ export function LocalFileLink({
   link,
   isModified,
   onLinksChanged,
+  onPublished,
 }: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -62,6 +69,22 @@ export function LocalFileLink({
     }
   }
 
+  async function handlePublish() {
+    if (!link) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const content = await getLocalFileContent(link.localPath);
+      await updateWebResourceContent(orgApiUrl, webresourceId, utf8ToBase64(content));
+      await publishWebResources(orgApiUrl, [webresourceId]);
+      onPublished(webresourceId);
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <div className="flex min-w-0 flex-col gap-1">
       {link ? (
@@ -73,6 +96,18 @@ export function LocalFileLink({
             <Badge color="warning" className="shrink-0">
               Modified
             </Badge>
+          )}
+          {isModified && (
+            <Button
+              size="small"
+              appearance="primary"
+              icon={<CloudArrowUpRegular />}
+              onClick={handlePublish}
+              disabled={busy}
+              className="shrink-0"
+            >
+              Publish
+            </Button>
           )}
           <Button
             size="small"

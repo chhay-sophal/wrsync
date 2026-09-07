@@ -127,6 +127,10 @@ export function WebResourceList({
     });
   }, [links, checkOneModified]);
 
+  const handleRowPublished = useCallback((webresourceId: string) => {
+    setModifiedStatus((prev) => new Map(prev).set(webresourceId, false));
+  }, []);
+
   // Persisted per-solution so switching solutions doesn't show another solution's filters,
   // but returning to one you've already filtered restores it. Read via a ref inside the
   // solution-switch effect below so that effect only fires on an actual solution switch, not
@@ -360,12 +364,14 @@ export function WebResourceList({
                 key={r.webresourceid}
                 resource={r}
                 onShowDetails={setDetailsId}
+                orgApiUrl={orgApiUrl}
                 environmentId={environmentId}
                 solutionUniqueName={solutionUniqueName}
                 localFiles={localFiles}
                 link={links.find((l) => l.webresourceId === r.webresourceid)}
                 isModified={modifiedStatus.get(r.webresourceid) ?? false}
                 onLinksChanged={refreshLinks}
+                onPublished={handleRowPublished}
               />
             ))}
             {displayedResources.length === 0 && (
