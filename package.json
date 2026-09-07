@@ -36,6 +36,10 @@
       {
         "command": "wrsync.openPanel",
         "title": "Web Resource Sync: Open Panel"
+      },
+      {
+        "command": "wrsync.browseInPanel",
+        "title": "Web Resource Sync: Browse Web Resources In Panel"
       }
     ]
   },

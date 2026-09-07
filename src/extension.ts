@@ -6,7 +6,7 @@ import {
 	listSolutions,
 	listWebResourcesForSolution,
 } from './dataverseClient';
-import { openPanel } from './panel';
+import { openPanel, showWebResources } from './panel';
 
 export function activate(context: vscode.ExtensionContext) {
 	initAuth(context);
@@ -106,6 +106,48 @@ export function activate(context: vscode.ExtensionContext) {
 
 		vscode.commands.registerCommand('wrsync.openPanel', () => {
 			openPanel();
+		}),
+
+		vscode.commands.registerCommand('wrsync.browseInPanel', async () => {
+			try {
+				const environments = await vscode.window.withProgress(
+					{ location: vscode.ProgressLocation.Notification, title: 'Loading environments…' },
+					() => listEnvironments()
+				);
+				if (environments.length === 0) {
+					vscode.window.showInformationMessage('No Dataverse environments found for this account.');
+					return;
+				}
+				const pickedEnv = await vscode.window.showQuickPick(
+					environments.map((env) => ({ label: env.displayName, description: env.apiUrl, env })),
+					{ placeHolder: 'Select a Dataverse environment' }
+				);
+				if (!pickedEnv) {return;}
+
+				const solutions = await vscode.window.withProgress(
+					{ location: vscode.ProgressLocation.Notification, title: 'Loading solutions…' },
+					() => listSolutions(pickedEnv.env.apiUrl)
+				);
+				if (solutions.length === 0) {
+					vscode.window.showInformationMessage('No unmanaged solutions found in this environment.');
+					return;
+				}
+				const pickedSolution = await vscode.window.showQuickPick(
+					solutions.map((sol) => ({ label: sol.friendlyname, description: sol.uniquename, sol })),
+					{ placeHolder: 'Select a solution' }
+				);
+				if (!pickedSolution) {return;}
+
+				const resources = await vscode.window.withProgress(
+					{ location: vscode.ProgressLocation.Notification, title: 'Loading web resources…' },
+					() => listWebResourcesForSolution(pickedEnv.env.apiUrl, pickedSolution.sol.solutionid)
+				);
+
+				await openPanel();
+				await showWebResources(resources);
+			} catch (err) {
+				vscode.window.showErrorMessage(`Failed to browse web resources: ${(err as Error).message}`);
+			}
 		})
 	);
 }
