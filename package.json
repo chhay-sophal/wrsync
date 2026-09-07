@@ -28,6 +28,10 @@
       {
         "command": "wrsync.pickEnvironment",
         "title": "Web Resource Sync: Pick Environment"
+      },
+      {
+        "command": "wrsync.browseWebResources",
+        "title": "Web Resource Sync: Browse Web Resources"
       }
     ]
   },
