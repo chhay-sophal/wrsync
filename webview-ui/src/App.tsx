@@ -14,6 +14,7 @@ import {
   ArrowSyncRegular,
   CloudRegular,
   DocumentBulletListRegular,
+  FolderRegular,
   SignOutRegular,
   WeatherMoonRegular,
   WeatherSunnyRegular,
@@ -31,6 +32,7 @@ import {
   type WebResourceListHandle,
 } from "./features/webresources/WebResourceList";
 import { usePersistedState } from "./hooks/usePersistedState";
+import { useWorkspaceFiles } from "./hooks/useWorkspaceFiles";
 
 interface Props {
   isDark: boolean;
@@ -53,6 +55,7 @@ function App({ isDark, onToggleTheme }: Props) {
   const [hasActiveWebResourceFilters, setHasActiveWebResourceFilters] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const webResourceListRef = useRef<WebResourceListHandle>(null);
+  const workspaceFiles = useWorkspaceFiles();
 
   useEffect(() => {
     getAuthStatus()
@@ -119,6 +122,22 @@ function App({ isDark, onToggleTheme }: Props) {
               borderBottom: `1px solid ${tokens.colorNeutralStroke2}`,
             }}
           >
+            <div className="flex flex-1 items-center gap-2 px-3 py-1">
+              <FolderRegular />
+              <div className="min-w-0 flex flex-1 flex-col items-start leading-tight">
+                <Text size={100} style={{ color: tokens.colorNeutralForeground3 }}>
+                  Workspace
+                </Text>
+                <Text size={300} truncate wrap={false} className="w-full text-left truncate">
+                  {workspaceFiles.root
+                    ? `${workspaceFiles.root} — ${workspaceFiles.files.length} file(s)`
+                    : "No folder open"}
+                </Text>
+              </div>
+            </div>
+
+            <Divider vertical className="h-7 max-w-1" />
+
             <SettingsBarItem
               icon={<CloudRegular />}
               label="Environment"
