@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'node:fs';
 import type { WebResource } from './dataverseClient';
+import { dispatchRpc } from './rpc';
 
 let extensionUri: vscode.Uri;
 
@@ -35,13 +36,17 @@ export function openPanel(): Promise<vscode.WebviewPanel> {
 	currentPanel = panel;
 
 	readyPromise = new Promise((resolve) => {
-		panel.webview.onDidReceiveMessage((message: { type: string; id?: string; name?: string }) => {
+		panel.webview.onDidReceiveMessage((message: { type: string; id?: string; name?: string; method?: string; params?: unknown }) => {
 			if (message.type === 'ready') {
 				resolve();
 				return;
 			}
 			if (message.type === 'resourcePicked') {
 				vscode.window.showInformationMessage(`You clicked: ${message.name} (${message.id})`);
+				return;
+			}
+			if (message.type === 'rpc') {
+				dispatchRpc(panel.webview, message as { type: 'rpc'; id: string; method: string; params?: unknown });
 			}
 		});
 	});
