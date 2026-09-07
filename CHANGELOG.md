@@ -2,8 +2,8 @@
 
 All notable changes to the "wrsync" extension will be documented in this file.
 
-Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
+## [0.0.1]
 
-## [Unreleased]
-
-- Initial release
+- Initial version: sign-in, environment/solution browsing, web resource list with
+  filtering/sorting/details, workspace file linking with live modified detection,
+  publish (single/selected/all), and creating new web resources.

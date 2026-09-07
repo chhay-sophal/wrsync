@@ -11,4 +11,16 @@ vsc-extension-quickstart.md
 **/eslint.config.mjs
 **/*.map
 **/*.ts
+**/*.tsx
 **/.vscode-test.*
+webview-ui/node_modules/**
+webview-ui/src/**
+webview-ui/public/**
+webview-ui/index.html
+webview-ui/vite.config.ts
+webview-ui/tsconfig*.json
+webview-ui/.oxlintrc.json
+webview-ui/.gitignore
+webview-ui/README.md
+webview-ui/package.json
+webview-ui/package-lock.json

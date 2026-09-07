@@ -1,71 +1,50 @@
-# wrsync README
+# Web Resource Sync
 
-This is the README for your extension "wrsync". After writing up a brief description, we recommend including the following sections.
+Edit Power Apps (Dataverse) web resources from local files, right inside VS Code.
+
+Sign in with your Microsoft account, browse a solution's web resources, link them to
+files in your open workspace, and publish changes back to Dataverse — without leaving
+the editor.
 
 ## Features
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
-
-For example if there is an image subfolder under your extension project workspace:
-
-\!\[feature X\]\(images/feature-x.png\)
-
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+- **Sign in** with your Microsoft account (no app registration or admin consent needed).
+- **Browse** Dataverse environments, solutions, and their web resources, with filtering,
+  sorting, and a details view.
+- **Link** a web resource to a file in your open workspace folder.
+- **Live change detection** — linked files are watched automatically, and a resource shows
+  a "Modified" badge as soon as its local content diverges from what's published.
+- **Publish** a single resource, a selection, or everything that's changed at once.
+- **Create** new web resources directly from the panel.
 
 ## Requirements
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+- VS Code 1.135.0 or newer.
+- A Microsoft account with access to at least one Dataverse environment.
+- A folder open in VS Code containing the local files (HTML/JS/CSS/etc.) you want to link
+  to web resources.
 
-## Extension Settings
+## Getting started
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
+1. Run **Web Resource Sync: Open Panel** from the Command Palette.
+2. Click **Sign in** and complete the Microsoft sign-in flow in your browser.
+3. Pick an **Environment** and **Solution** from the settings bar.
+4. Link a web resource to a file in your workspace, edit the file, and publish.
 
-For example:
+## Building a local .vsix
 
-This extension contributes the following settings:
+This extension isn't published to the Marketplace. To install it yourself:
 
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
+```
+npm install
+npm run package:vsix
+```
 
-## Known Issues
+This produces a `.vsix` file in the project root. Install it via the Extensions view's
+"..." menu → **Install from VSIX...**, or `code --install-extension wrsync-<version>.vsix`.
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
+## Known limitations
 
-## Release Notes
-
-Users appreciate release notes as you update your extension.
-
-### 1.0.0
-
-Initial release of ...
-
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
-
----
-
-## Following extension guidelines
-
-Ensure that you've read through the extensions guidelines and follow the best practices for creating your extension.
-
-* [Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
-
-## Working with Markdown
-
-You can author your README using Visual Studio Code. Here are some useful editor keyboard shortcuts:
-
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux).
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux).
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets.
-
-## For more information
-
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
-
-**Enjoy!**
+- Only the first open workspace folder is used as the source of local files.
+- No delete action for web resources (matching the original desktop app, which never
+  exposed one either).

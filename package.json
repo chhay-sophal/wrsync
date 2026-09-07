@@ -3,6 +3,8 @@
   "displayName": "Web Resource Sync",
   "description": "Edit Power Apps (Dataverse) web resources from local files, right inside VS Code",
   "version": "0.0.1",
+  "publisher": "sophal-syncmusic",
+  "license": "MIT",
   "engines": {
     "vscode": "^1.135.0"
   },
@@ -51,6 +53,7 @@
     "watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
     "build:webview": "npm --prefix webview-ui run build",
     "package": "npm run check-types && npm run lint && npm run build:webview && node esbuild.js --production",
+    "package:vsix": "npm run package && vsce package",
     "compile-tests": "tsc -p . --outDir out",
     "watch-tests": "tsc -p . -w --outDir out",
     "pretest": "npm run compile-tests && npm run compile && npm run lint",
@@ -64,6 +67,7 @@
     "@types/vscode": "^1.135.0",
     "@vscode/test-cli": "^0.0.15",
     "@vscode/test-electron": "^3.0.0",
+    "@vscode/vsce": "^3.9.2",
     "esbuild": "^0.28.1",
     "eslint": "^10.5.0",
     "npm-run-all": "^4.1.5",
