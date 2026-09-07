@@ -1,6 +1,7 @@
 import {
   Button,
   Card,
+  Divider,
   Field,
   Input,
   Spinner,
@@ -8,9 +9,20 @@ import {
   Title2,
   tokens,
 } from "@fluentui/react-components";
-import { SignOutRegular, WeatherMoonRegular, WeatherSunnyRegular } from "@fluentui/react-icons";
+import {
+  AppsListDetailRegular,
+  CloudRegular,
+  SignOutRegular,
+  WeatherMoonRegular,
+  WeatherSunnyRegular,
+} from "@fluentui/react-icons";
 import { useEffect, useState } from "react";
 import { getAuthStatus, login, logout } from "./api/auth";
+import type { DataverseEnvironment, Solution } from "./api/dataverse";
+import { SettingsBarItem } from "./components/SettingsBarItem";
+import { EnvironmentPicker } from "./features/environments/EnvironmentPicker";
+import { SolutionPicker } from "./features/solutions/SolutionPicker";
+import { usePersistedState } from "./hooks/usePersistedState";
 
 interface Props {
   isDark: boolean;
@@ -23,6 +35,13 @@ function App({ isDark, onToggleTheme }: Props) {
   const [signingIn, setSigningIn] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [tenant, setTenant] = useState("");
+  const [environment, setEnvironment] = usePersistedState<DataverseEnvironment | null>(
+    "wrsync.environment",
+    null
+  );
+  const [solution, setSolution] = usePersistedState<Solution | null>("wrsync.solution", null);
+  const [environmentBarOpen, setEnvironmentBarOpen] = useState(false);
+  const [solutionBarOpen, setSolutionBarOpen] = useState(false);
 
   useEffect(() => {
     getAuthStatus()
@@ -46,34 +65,87 @@ function App({ isDark, onToggleTheme }: Props) {
   async function handleSignOut() {
     await logout();
     setUsername(null);
+    setEnvironment(null);
+    setSolution(null);
   }
 
   return (
     <div className="flex h-screen flex-col" style={{ background: tokens.colorNeutralBackground2 }}>
-      <header
-        className="flex items-center justify-between px-6 py-2.5"
-        style={{
-          background: tokens.colorNeutralBackground1,
-          borderBottom: `1px solid ${tokens.colorNeutralStroke2}`,
-        }}
-      >
-        <Text weight="semibold" size={500}>
-          Web Resource Sync
-        </Text>
-        <div className="flex items-center gap-2">
-          {username && <Text size={200}>{username}</Text>}
-          <Button
-            appearance="subtle"
-            icon={isDark ? <WeatherSunnyRegular /> : <WeatherMoonRegular />}
-            onClick={onToggleTheme}
-          />
-          {username && (
-            <Button appearance="subtle" icon={<SignOutRegular />} onClick={handleSignOut}>
-              Sign out
-            </Button>
-          )}
-        </div>
-      </header>
+      <div>
+        <header
+          className="flex items-center justify-between px-6 py-2.5"
+          style={{
+            background: tokens.colorNeutralBackground1,
+            borderBottom: `1px solid ${tokens.colorNeutralStroke2}`,
+          }}
+        >
+          <Text weight="semibold" size={500}>
+            Web Resource Sync
+          </Text>
+          <div className="flex items-center gap-2">
+            {username && <Text size={200}>{username}</Text>}
+            <Button
+              appearance="subtle"
+              icon={isDark ? <WeatherSunnyRegular /> : <WeatherMoonRegular />}
+              onClick={onToggleTheme}
+            />
+            {username && (
+              <Button appearance="subtle" icon={<SignOutRegular />} onClick={handleSignOut}>
+                Sign out
+              </Button>
+            )}
+          </div>
+        </header>
+
+        {username && (
+          <div
+            className="flex flex-wrap items-center gap-1 px-6 py-1"
+            style={{
+              background: tokens.colorNeutralBackground1,
+              borderBottom: `1px solid ${tokens.colorNeutralStroke2}`,
+            }}
+          >
+            <SettingsBarItem
+              icon={<CloudRegular />}
+              label="Environment"
+              value={environment?.displayName ?? "Not selected"}
+              open={environmentBarOpen}
+              onOpenChange={setEnvironmentBarOpen}
+            >
+              <EnvironmentPicker
+                selected={environment}
+                onSelect={(env) => {
+                  setEnvironment(env);
+                  setSolution(null);
+                  setEnvironmentBarOpen(false);
+                }}
+              />
+            </SettingsBarItem>
+
+            <Divider vertical className="h-7 max-w-1" />
+
+            <SettingsBarItem
+              icon={<AppsListDetailRegular />}
+              label="Solution"
+              value={solution?.friendlyname ?? (environment ? "Not selected" : "Pick an environment first")}
+              disabled={!environment}
+              open={solutionBarOpen}
+              onOpenChange={setSolutionBarOpen}
+            >
+              {environment && (
+                <SolutionPicker
+                  orgApiUrl={environment.apiUrl}
+                  selected={solution}
+                  onSelect={(sol) => {
+                    setSolution(sol);
+                    setSolutionBarOpen(false);
+                  }}
+                />
+              )}
+            </SettingsBarItem>
+          </div>
+        )}
+      </div>
 
       <main className="flex flex-1 items-center justify-center p-6">
         {checkingStatus ? (
@@ -108,9 +180,13 @@ function App({ isDark, onToggleTheme }: Props) {
               </Text>
             )}
           </Card>
+        ) : environment && solution ? (
+          <Text style={{ color: tokens.colorNeutralForeground3 }}>
+            {solution.friendlyname} in {environment.displayName}. The web resource list comes next.
+          </Text>
         ) : (
           <Text style={{ color: tokens.colorNeutralForeground3 }}>
-            Signed in as {username}. Environment and solution pickers come next.
+            Pick an environment and solution above to see its web resources.
           </Text>
         )}
       </main>
