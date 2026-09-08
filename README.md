@@ -104,3 +104,58 @@ This produces a `.vsix` file in the project root. Install it via the Extensions 
 - Only the first open workspace folder is used as the source of local files.
 - No delete action for web resources (matching the original desktop app, which never
   exposed one either).
+
+## Issues and feedback
+
+Found a bug, or have a feature request? Please
+[open an issue](https://github.com/chhay-sophal/wrsync/issues) on this repository.
+
+## Contributing
+
+The extension is split into two parts:
+
+- **The extension host** (`src/`) — runs in Node, talks to Microsoft Entra ID (via
+  `@azure/msal-node`) and the Dataverse Web API, and hosts the sidebar webview.
+- **The webview UI** (`webview-ui/`) — a separate React + Vite + Fluent UI project. It
+  never calls `fetch()` directly; it talks to the extension host over `postMessage()`
+  through the RPC bridge in `src/rpc.ts` / `webview-ui/src/api/rpc.ts`.
+
+### Setup
+
+```
+git clone https://github.com/chhay-sophal/wrsync.git
+cd wrsync
+npm install
+```
+
+`npm install` also installs `webview-ui`'s dependencies (via a `postinstall` script) —
+you don't need a separate step for that.
+
+### Running it
+
+Open the folder in VS Code and press **F5** to launch an Extension Development Host with
+the extension loaded. Reopen the sidebar there after any change to `src/` or
+`webview-ui/` to pick it up (a full **Developer: Reload Window** is needed after changing
+`package.json`'s `contributes`, since that's read at activation).
+
+### Before committing
+
+```
+npm run compile
+```
+
+This typechecks and lints both parts, builds `webview-ui`, and bundles the extension
+host — the same checks `npm run package` runs before packaging a `.vsix`.
+
+### Project layout
+
+| Path | Purpose |
+| --- | --- |
+| `src/auth.ts` | Microsoft sign-in, token cache, account persistence |
+| `src/dataverseClient.ts` | Dataverse Web API calls |
+| `src/workspaceFiles.ts` / `src/fileWatcher.ts` | Listing and watching workspace files |
+| `src/linksStore.ts` | Web-resource ↔ local-file link storage |
+| `src/rpc.ts` | Routes RPC calls from the webview to the functions above |
+| `src/sidebarView.ts` | Hosts the webview as an Activity Bar sidebar view |
+| `webview-ui/src/api/` | RPC-backed clients mirroring the modules above |
+| `webview-ui/src/features/` | The environment/solution pickers and web resource list |

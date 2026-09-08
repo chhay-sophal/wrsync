@@ -68,6 +68,7 @@
     }
   },
   "scripts": {
+    "postinstall": "npm --prefix webview-ui install",
     "vscode:prepublish": "npm run package",
     "compile": "npm run check-types && npm run lint && npm run build:webview && node esbuild.js",
     "watch": "npm-run-all -p watch:*",
