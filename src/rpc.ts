@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { getAuthStatus, login, logout } from './auth';
+import { openCompareDiff } from './compareProvider';
 import {
 	createWebResource,
 	getWebResourceContent,
@@ -48,6 +49,8 @@ const handlers: Record<string, Handler> = {
 	'links.list': async () => listLinks(),
 	'links.create': (params: Omit<ResourceLink, 'id'>) => createLink(params),
 	'links.delete': (params: { id: string }) => deleteLink(params.id),
+	'compare.openDiff': (params: { orgApiUrl: string; webresourceId: string; webresourceName: string; localPath: string }) =>
+		openCompareDiff(params),
 };
 
 /** Dispatches an { type: 'rpc' } message from the webview to the matching function in this

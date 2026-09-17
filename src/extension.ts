@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { getAuthStatus, initAuth, login, logout } from './auth';
+import { initCompareProvider } from './compareProvider';
 import {
 	getWebResourceDetails,
 	listEnvironments,
@@ -12,6 +13,7 @@ import { SidebarViewProvider } from './sidebarView';
 export function activate(context: vscode.ExtensionContext) {
 	initAuth(context);
 	initLinksStore(context);
+	initCompareProvider(context);
 
 	context.subscriptions.push(
 		vscode.window.registerWebviewViewProvider('wrsync.sidebar', new SidebarViewProvider(context.extensionUri))

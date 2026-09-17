@@ -1,6 +1,7 @@
 import { Badge, Button, Combobox, Option, Text, tokens } from "@fluentui/react-components";
-import { CloudArrowUpRegular, LinkDismissRegular } from "@fluentui/react-icons";
+import { BranchCompareRegular, CloudArrowUpRegular, LinkDismissRegular } from "@fluentui/react-icons";
 import { useMemo, useState } from "react";
+import { openCompareDiff } from "../../api/compare";
 import { publishWebResources, updateWebResourceContent } from "../../api/dataverse";
 import { createLink, deleteLink, getLocalFileContent, type LocalFile, type ResourceLink } from "../../api/local";
 import { utf8ToBase64 } from "../../lib/base64";
@@ -92,6 +93,16 @@ export function LocalFileLink({
     }
   }
 
+  async function handleCompare() {
+    if (!link) return;
+    setError(null);
+    try {
+      await openCompareDiff({ orgApiUrl, webresourceId, webresourceName, localPath: link.localPath });
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  }
+
   return (
     <div className="flex min-w-0 flex-col gap-1">
       {link ? (
@@ -110,6 +121,11 @@ export function LocalFileLink({
                 disabled={busy}
               >
                 Publish
+              </Button>
+            )}
+            {isModified && (
+              <Button size="small" appearance="secondary" icon={<BranchCompareRegular />} onClick={handleCompare}>
+                Compare
               </Button>
             )}
             <Button
