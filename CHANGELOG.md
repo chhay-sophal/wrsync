@@ -2,7 +2,7 @@
 
 All notable changes to the "wrsync" extension will be documented in this file.
 
-## [Unreleased]
+## [0.0.2]
 
 - Moved the UI from an editor-tab panel into a persistent Activity Bar sidebar view, so
   it stays open alongside the code you're editing instead of living in a tab.
@@ -15,6 +15,7 @@ All notable changes to the "wrsync" extension will be documented in this file.
 - Added a **Compare** button on modified resources that opens a VS Code diff editor tab
   between the published Dataverse content and the linked local file, letting you copy
   individual changed blocks over instead of publishing or discarding the whole file.
+- Added a live modified-file count badge on the sidebar's Activity Bar icon.
 
 ## [0.0.1]
 
