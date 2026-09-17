@@ -1,6 +1,6 @@
-import { Badge, Button, Dropdown, Option, Text, tokens } from "@fluentui/react-components";
-import { CloudArrowUpRegular, LinkDismissRegular, LinkRegular } from "@fluentui/react-icons";
-import { useState } from "react";
+import { Badge, Button, Combobox, Option, Text, tokens } from "@fluentui/react-components";
+import { CloudArrowUpRegular, LinkDismissRegular } from "@fluentui/react-icons";
+import { useMemo, useState } from "react";
 import { publishWebResources, updateWebResourceContent } from "../../api/dataverse";
 import { createLink, deleteLink, getLocalFileContent, type LocalFile, type ResourceLink } from "../../api/local";
 import { utf8ToBase64 } from "../../lib/base64";
@@ -35,6 +35,13 @@ export function LocalFileLink({
 }: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+
+  const filteredFiles = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return localFiles;
+    return localFiles.filter((f) => f.path.toLowerCase().includes(q));
+  }, [localFiles, query]);
 
   async function handleLink(localPath: string) {
     setBusy(true);
@@ -117,23 +124,20 @@ export function LocalFileLink({
           </div>
         </div>
       ) : (
-        <Dropdown
+        <Combobox
           placeholder={localFiles.length === 0 ? "No local files found" : "Link a file..."}
           disabled={busy || localFiles.length === 0}
+          value={query}
+          selectedOptions={[]}
           onOptionSelect={(_, data) => data.optionValue && handleLink(data.optionValue)}
-          button={
-            <span className="flex items-center gap-1.5">
-              <LinkRegular />
-              {localFiles.length === 0 ? "No local files found" : "Link a file..."}
-            </span>
-          }
+          onChange={(ev) => setQuery(ev.target.value)}
         >
-          {localFiles.map((f) => (
-            <Option key={f.path} value={f.path}>
+          {filteredFiles.map((f) => (
+            <Option key={f.path} value={f.path} text={f.path}>
               {f.path}
             </Option>
           ))}
-        </Dropdown>
+        </Combobox>
       )}
       {error && (
         <Text size={200} style={{ color: tokens.colorPaletteRedForeground1 }}>
