@@ -74,6 +74,7 @@
     "watch": "npm-run-all -p watch:*",
     "watch:esbuild": "node esbuild.js --watch",
     "watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
+    "watch:webview": "npm --prefix webview-ui run watch",
     "build:webview": "npm --prefix webview-ui run build",
     "package": "npm run check-types && npm run lint && npm run build:webview && node esbuild.js --production",
     "package:vsix": "npm run package && vsce package",
