@@ -42,7 +42,7 @@ interface Props {
  * to have a "column" at all) with a single combined toolbar: a search box, a Type/Managed
  * filter popover, and a sort dropdown. */
 export function WebResourceToolbar({ filters, onFiltersChange, sort, onSortChange, availableTypes }: Props) {
-  const filtersActive = filters.types.size > 0 || filters.managed !== "all";
+  const filtersActive = filters.types.size > 0 || filters.managed !== "all" || filters.modifiedOnly;
   const selectedSortOption = SORT_OPTIONS.find((o) => o.key === sortKeyFor(sort)) ?? SORT_OPTIONS[0];
 
   function toggleType(code: number) {
@@ -98,10 +98,15 @@ export function WebResourceToolbar({ filters, onFiltersChange, sort, onSortChang
                 <Radio value="managed" label="Managed" />
                 <Radio value="unmanaged" label="Unmanaged" />
               </RadioGroup>
+              <Checkbox
+                label="Modified only"
+                checked={filters.modifiedOnly}
+                onChange={(_, data) => onFiltersChange({ ...filters, modifiedOnly: !!data.checked })}
+              />
               <Button
                 size="small"
                 appearance="subtle"
-                onClick={() => onFiltersChange({ ...filters, types: new Set(), managed: "all" })}
+                onClick={() => onFiltersChange({ ...filters, types: new Set(), managed: "all", modifiedOnly: false })}
               >
                 Clear
               </Button>

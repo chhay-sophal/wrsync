@@ -1,7 +1,7 @@
 import {
   Button,
+  Combobox,
   Divider,
-  Dropdown,
   Field,
   Input,
   Option,
@@ -10,7 +10,7 @@ import {
   tokens,
 } from "@fluentui/react-components";
 import { PlugConnectedRegular } from "@fluentui/react-icons";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { listEnvironments, type DataverseEnvironment } from "../../api/dataverse";
 
 interface Props {
@@ -28,12 +28,24 @@ export function EnvironmentPicker({ selected, onSelect }: Props) {
   const [environments, setEnvironments] = useState<DataverseEnvironment[] | null>(null);
   const [discoveryError, setDiscoveryError] = useState<string | null>(null);
   const [manualUrl, setManualUrl] = useState("");
+  const [query, setQuery] = useState(selected?.displayName ?? "");
 
   useEffect(() => {
     listEnvironments()
       .then(setEnvironments)
       .catch((err) => setDiscoveryError(err.message));
   }, []);
+
+  useEffect(() => {
+    setQuery(selected?.displayName ?? "");
+  }, [selected]);
+
+  const filtered = useMemo(() => {
+    if (!environments) return [];
+    const q = query.trim().toLowerCase();
+    if (!q || q === selected?.displayName?.toLowerCase()) return environments;
+    return environments.filter((env) => env.displayName.toLowerCase().includes(q));
+  }, [environments, query, selected]);
 
   function connectManually() {
     const apiUrl = normalizeApiUrl(manualUrl);
@@ -59,20 +71,22 @@ export function EnvironmentPicker({ selected, onSelect }: Props) {
         <Text>No environments found via discovery — connect directly below instead.</Text>
       )}
       {environments && environments.length > 0 && (
-        <Dropdown
+        <Combobox
           placeholder="Choose an environment"
-          value={selected?.displayName ?? ""}
+          value={query}
+          selectedOptions={selected ? [selected.id] : []}
           onOptionSelect={(_, data) => {
             const env = environments.find((e) => e.id === data.optionValue);
             if (env) onSelect(env);
           }}
+          onChange={(ev) => setQuery(ev.target.value)}
         >
-          {environments.map((env) => (
-            <Option key={env.id} value={env.id}>
+          {filtered.map((env) => (
+            <Option key={env.id} value={env.id} text={env.displayName}>
               {env.displayName}
             </Option>
           ))}
-        </Dropdown>
+        </Combobox>
       )}
 
       <Divider />

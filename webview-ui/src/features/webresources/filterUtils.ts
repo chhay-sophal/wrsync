@@ -8,9 +8,11 @@ export interface Filters {
   search: string;
   types: Set<number>;
   managed: ManagedFilter;
+  /** Show only web resources whose linked local file differs from what's published. */
+  modifiedOnly: boolean;
 }
 
-export const EMPTY_FILTERS: Filters = { search: "", types: new Set(), managed: "all" };
+export const EMPTY_FILTERS: Filters = { search: "", types: new Set(), managed: "all", modifiedOnly: false };
 
 /** localStorage can't hold a Set directly, so filters get flattened to a plain array for
  * persistence and rebuilt into a Set on the way back out. */
@@ -18,6 +20,7 @@ export interface SerializedFilters {
   search: string;
   types: number[];
   managed: ManagedFilter;
+  modifiedOnly: boolean;
 }
 
 export interface PersistedFilterEntry {
@@ -41,6 +44,7 @@ export function deserializeFilters(s: Partial<SerializedFilters>): Filters {
     search: s.search ?? "",
     types: new Set(s.types ?? []),
     managed: s.managed ?? "all",
+    modifiedOnly: s.modifiedOnly ?? false,
   };
 }
 

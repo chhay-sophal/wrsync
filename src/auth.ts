@@ -163,6 +163,22 @@ export async function getAccessToken(resourceBaseUrl: string): Promise<string> {
   }
 }
 
+/**
+ * Like getAccessToken(), but never falls back to an interactive sign-in — returns null
+ * instead. For background work (e.g. the modified-file badge) that must not surprise the
+ * user with a browser tab popping open while they're not actively using the extension.
+ */
+export async function getAccessTokenSilent(resourceBaseUrl: string): Promise<string | null> {
+  const account = await getAccount();
+  if (!account) {return null;}
+  try {
+    const result = await pca.acquireTokenSilent({ account, scopes: [`${resourceBaseUrl}/.default`] });
+    return result.accessToken;
+  } catch {
+    return null;
+  }
+}
+
 export const POWER_PLATFORM_RESOURCE = "https://api.powerplatform.com";
 
 export async function getAuthStatus(): Promise<{ signedIn: boolean; username?: string }> {
