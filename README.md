@@ -68,7 +68,16 @@ linked, that file's content is compared against what's published in Dataverse
 automatically — no manual refresh needed. If they differ, a **Modified** badge appears
 as soon as you save the file.
 
-### 6. Publish your changes
+### 6. Compare and resolve changes
+
+Click **Compare** on a card that shows **Modified** to open a VS Code diff editor tab
+with the published Dataverse content on the left and your local file on the right (the
+same tab you'd get from `git diff`). The Dataverse side is read-only, but you can hover
+over a changed block and click its arrow to copy that block into your local file — pick
+Dataverse's version block-by-block instead of publishing (overwrite) or discarding
+(ignore) the whole file at once. Leaving a block alone keeps your local version.
+
+### 7. Publish your changes
 
 - Click **Publish** on an individual card once it shows **Modified**.
 - Or select multiple cards (checkboxes) and click **Publish Selected** in the toolbar.
@@ -76,7 +85,7 @@ as soon as you save the file.
 
 Publishing uploads the linked file's current content and publishes it in one step.
 
-### 7. Create a new web resource
+### 8. Create a new web resource
 
 Click **Create** in the toolbar, fill in a name (e.g. `new_/scripts/myscript.js`),
 display name, and type, then click **Create**. It's added to the current solution
