@@ -8,12 +8,14 @@ import {
 	listWebResourcesForSolution,
 } from './dataverseClient';
 import { initLinksStore } from './linksStore';
+import { initModifiedTracker } from './modifiedTracker';
 import { SidebarViewProvider } from './sidebarView';
 
 export function activate(context: vscode.ExtensionContext) {
 	initAuth(context);
 	initLinksStore(context);
 	initCompareProvider(context);
+	initModifiedTracker(context);
 
 	context.subscriptions.push(
 		vscode.window.registerWebviewViewProvider('wrsync.sidebar', new SidebarViewProvider(context.extensionUri))

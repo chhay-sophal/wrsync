@@ -83,6 +83,7 @@ function App({ isDark, onToggleTheme }: Props) {
     setUsername(null);
     setEnvironment(null);
     setSolution(null);
+    setModifiedCount(0);
     // Web resource filters persist across refreshes while signed in, but shouldn't outlive
     // the session (e.g. on a shared machine).
     localStorage.removeItem(FILTERS_STORAGE_KEY);

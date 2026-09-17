@@ -1,6 +1,7 @@
 import * as fs from 'node:fs';
 import * as vscode from 'vscode';
 import { watchWorkspaceFiles } from './fileWatcher';
+import { scheduleModifiedCountRefresh, setBadgeTarget } from './modifiedTracker';
 import { dispatchRpc } from './rpc';
 
 /**
@@ -29,8 +30,15 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
 			}
 		});
 
+		// The badge lives on this WebviewView object regardless of whether the sidebar is
+		// currently the visible one, so it keeps reflecting reality (via modifiedTracker's own
+		// file watcher) even while the user is looking at Explorer or another view.
+		setBadgeTarget(webviewView);
+		scheduleModifiedCountRefresh();
+
 		webviewView.onDidDispose(() => {
 			watcher.dispose();
+			setBadgeTarget(undefined);
 		});
 	}
 }

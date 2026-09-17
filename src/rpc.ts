@@ -12,6 +12,7 @@ import {
 	updateWebResourceContent,
 } from './dataverseClient';
 import { createLink, deleteLink, listLinks, type ResourceLink } from './linksStore';
+import { scheduleModifiedCountRefresh } from './modifiedTracker';
 import { getWorkspaceFileContent, listWorkspaceFiles } from './workspaceFiles';
 
 interface RpcRequest {
@@ -25,8 +26,15 @@ type Handler = (params: any) => Promise<unknown>;
 
 const handlers: Record<string, Handler> = {
 	'auth.status': () => getAuthStatus(),
-	'auth.login': (params: { tenant?: string } = {}) => login(params.tenant),
-	'auth.logout': () => logout(),
+	'auth.login': async (params: { tenant?: string } = {}) => {
+		const result = await login(params.tenant);
+		scheduleModifiedCountRefresh();
+		return result;
+	},
+	'auth.logout': async () => {
+		await logout();
+		scheduleModifiedCountRefresh();
+	},
 	'dataverse.listEnvironments': () => listEnvironments(),
 	'dataverse.listSolutions': (params: { orgApiUrl: string }) => listSolutions(params.orgApiUrl),
 	'dataverse.listWebResourcesForSolution': (params: { orgApiUrl: string; solutionId: string }) =>
@@ -37,8 +45,10 @@ const handlers: Record<string, Handler> = {
 		getWebResourceContent(params.orgApiUrl, params.webresourceId),
 	'dataverse.updateWebResourceContent': (params: { orgApiUrl: string; webresourceId: string; base64Content: string }) =>
 		updateWebResourceContent(params.orgApiUrl, params.webresourceId, params.base64Content),
-	'dataverse.publishWebResources': (params: { orgApiUrl: string; webresourceIds: string[] }) =>
-		publishWebResources(params.orgApiUrl, params.webresourceIds),
+	'dataverse.publishWebResources': async (params: { orgApiUrl: string; webresourceIds: string[] }) => {
+		await publishWebResources(params.orgApiUrl, params.webresourceIds);
+		scheduleModifiedCountRefresh();
+	},
 	'dataverse.createWebResource': (params: {
 		orgApiUrl: string;
 		solutionUniqueName: string;
@@ -47,8 +57,15 @@ const handlers: Record<string, Handler> = {
 	'workspace.listFiles': () => listWorkspaceFiles(),
 	'workspace.getFileContent': (params: { path: string }) => getWorkspaceFileContent(params.path),
 	'links.list': async () => listLinks(),
-	'links.create': (params: Omit<ResourceLink, 'id'>) => createLink(params),
-	'links.delete': (params: { id: string }) => deleteLink(params.id),
+	'links.create': async (params: Omit<ResourceLink, 'id'>) => {
+		const link = await createLink(params);
+		scheduleModifiedCountRefresh();
+		return link;
+	},
+	'links.delete': async (params: { id: string }) => {
+		await deleteLink(params.id);
+		scheduleModifiedCountRefresh();
+	},
 	'compare.openDiff': (params: { orgApiUrl: string; webresourceId: string; webresourceName: string; localPath: string }) =>
 		openCompareDiff(params),
 };
