@@ -233,7 +233,11 @@ export function WebResourceList({
   const scopeKey = `${orgApiUrl}::${solutionId}`;
 
   const hasActiveFilterOrSort =
-    sort !== null || filters.search !== "" || filters.types.size > 0 || filters.managed !== "all";
+    sort !== null ||
+    filters.search !== "" ||
+    filters.types.size > 0 ||
+    filters.managed !== "all" ||
+    filters.modifiedOnly;
 
   useEffect(() => {
     onActiveFilterOrSortChange?.(hasActiveFilterOrSort);
@@ -306,14 +310,15 @@ export function WebResourceList({
       (r) =>
         (matchesText(r.name, filters.search) || matchesText(r.displayname, filters.search)) &&
         (filters.types.size === 0 || filters.types.has(r.webresourcetype)) &&
-        (filters.managed === "all" || (filters.managed === "managed") === r.ismanaged)
+        (filters.managed === "all" || (filters.managed === "managed") === r.ismanaged) &&
+        (!filters.modifiedOnly || modifiedStatus.get(r.webresourceid) === true)
     );
     if (sort) {
       const dir = sort.direction === "asc" ? 1 : -1;
       list = [...list].sort((a, b) => sortValue(a, sort.column).localeCompare(sortValue(b, sort.column)) * dir);
     }
     return list;
-  }, [resources, filters, sort]);
+  }, [resources, filters, sort, modifiedStatus]);
 
   const toggleSelected = useCallback((id: string) => {
     setSelectedIds((prev) => {
