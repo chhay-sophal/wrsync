@@ -18,6 +18,7 @@ import {
 import { getLocalFileContent, listLinks, type LocalFile, type ResourceLink } from "../../api/local";
 import { usePersistedState } from "../../hooks/usePersistedState";
 import { base64ToUtf8, utf8ToBase64 } from "../../lib/base64";
+import { ConfirmPublishDialog } from "./ConfirmPublishDialog";
 import { CreateWebResourceDialog } from "./CreateWebResourceDialog";
 import {
   deserializeFilters,
@@ -52,8 +53,9 @@ function sortValue(r: WebResource, column: SortColumn): string {
 
 export interface WebResourceListHandle {
   clearAllFiltersAndSort: () => void;
-  publishAll: () => Promise<void>;
-  publishSelected: () => Promise<void>;
+  /** Both ask for confirmation first; the publish itself runs once the user confirms. */
+  publishAll: () => void;
+  publishSelected: () => void;
   openCreateDialog: () => void;
   refreshAll: () => Promise<void>;
 }
@@ -99,6 +101,7 @@ export function WebResourceList({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [detailsId, setDetailsId] = useState<string | null>(null);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [pendingPublish, setPendingPublish] = useState<{ ids: string[]; clearSelection: boolean } | null>(null);
 
   const refreshLinks = useCallback(() => {
     listLinks().then(setLinks);
@@ -208,15 +211,32 @@ export function WebResourceList({
     }
   }
 
-  async function publishAll() {
-    const toPublish = links.filter((l) => modifiedStatus.get(l.webresourceId)).map((l) => l.webresourceId);
-    await publishResources(toPublish);
+  function publishAll() {
+    const ids = links.filter((l) => modifiedStatus.get(l.webresourceId)).map((l) => l.webresourceId);
+    if (ids.length > 0) setPendingPublish({ ids, clearSelection: false });
   }
 
-  async function publishSelected() {
-    await publishResources([...selectedIds]);
-    setSelectedIds(new Set());
+  function publishSelected() {
+    if (selectedIds.size > 0) setPendingPublish({ ids: [...selectedIds], clearSelection: true });
   }
+
+  async function confirmPublish() {
+    if (!pendingPublish) return;
+    const { ids, clearSelection } = pendingPublish;
+    setPendingPublish(null);
+    await publishResources(ids);
+    if (clearSelection) setSelectedIds(new Set());
+  }
+
+  const pendingPublishNames = useMemo(() => {
+    if (!pendingPublish) return null;
+    return pendingPublish.ids.map(
+      (id) =>
+        resources?.find((r) => r.webresourceid === id)?.name ??
+        links.find((l) => l.webresourceId === id)?.webresourceName ??
+        id
+    );
+  }, [pendingPublish, resources, links]);
 
   // Persisted per-solution so switching solutions doesn't show another solution's filters,
   // but returning to one you've already filtered restores it. Read via a ref inside the
@@ -422,6 +442,12 @@ export function WebResourceList({
       </div>
 
       <WebResourceDetailsDialog orgApiUrl={orgApiUrl} webresourceId={detailsId} onClose={() => setDetailsId(null)} />
+      <ConfirmPublishDialog
+        orgApiUrl={orgApiUrl}
+        names={pendingPublishNames}
+        onConfirm={confirmPublish}
+        onCancel={() => setPendingPublish(null)}
+      />
       {createDialog}
     </div>
   );

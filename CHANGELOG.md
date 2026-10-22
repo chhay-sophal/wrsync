@@ -2,6 +2,11 @@
 
 All notable changes to the "wrsync" extension will be documented in this file.
 
+## [Unreleased]
+
+- Publish, Publish Selected, and Publish All now ask for confirmation first, listing the
+  resources and the target environment host before anything is overwritten.
+
 ## [0.0.2]
 
 - Moved the UI from an editor-tab panel into a persistent Activity Bar sidebar view, so

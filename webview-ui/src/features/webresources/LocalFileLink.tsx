@@ -5,6 +5,7 @@ import { openCompareDiff } from "../../api/compare";
 import { publishWebResources, updateWebResourceContent } from "../../api/dataverse";
 import { createLink, deleteLink, getLocalFileContent, type LocalFile, type ResourceLink } from "../../api/local";
 import { utf8ToBase64 } from "../../lib/base64";
+import { ConfirmPublishDialog } from "./ConfirmPublishDialog";
 
 interface Props {
   orgApiUrl: string;
@@ -37,6 +38,7 @@ export function LocalFileLink({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
+  const [confirmingPublish, setConfirmingPublish] = useState(false);
 
   const filteredFiles = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -78,6 +80,7 @@ export function LocalFileLink({
   }
 
   async function handlePublish() {
+    setConfirmingPublish(false);
     if (!link) return;
     setBusy(true);
     setError(null);
@@ -117,7 +120,7 @@ export function LocalFileLink({
                 size="small"
                 appearance="primary"
                 icon={<CloudArrowUpRegular />}
-                onClick={handlePublish}
+                onClick={() => setConfirmingPublish(true)}
                 disabled={busy}
               >
                 Publish
@@ -160,6 +163,12 @@ export function LocalFileLink({
           {error}
         </Text>
       )}
+      <ConfirmPublishDialog
+        orgApiUrl={orgApiUrl}
+        names={confirmingPublish ? [webresourceName] : null}
+        onConfirm={handlePublish}
+        onCancel={() => setConfirmingPublish(false)}
+      />
     </div>
   );
 }
