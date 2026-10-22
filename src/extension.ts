@@ -18,7 +18,12 @@ export function activate(context: vscode.ExtensionContext) {
 	initModifiedTracker(context);
 
 	context.subscriptions.push(
-		vscode.window.registerWebviewViewProvider('wrsync.sidebar', new SidebarViewProvider(context.extensionUri))
+		vscode.window.registerWebviewViewProvider('wrsync.sidebar', new SidebarViewProvider(context.extensionUri), {
+			// Without this VS Code destroys the webview whenever the sidebar is hidden, so every
+			// return would remount the app and re-fetch the web resource list, links and modified
+			// status from scratch.
+			webviewOptions: { retainContextWhenHidden: true },
+		})
 	);
 
 	context.subscriptions.push(

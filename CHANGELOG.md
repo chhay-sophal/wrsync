@@ -8,6 +8,7 @@ All notable changes to the "wrsync" extension will be documented in this file.
   resources and the target environment host before anything is overwritten.
 - Unlinking a local file now asks for confirmation first.
 - The web resource details dialog now shows who last modified the resource in Dataverse.
+- Switching away from the wrsync sidebar and back no longer reloads the web resource list.
 
 ## [0.0.2]
 
