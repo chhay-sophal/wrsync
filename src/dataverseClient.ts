@@ -78,6 +78,8 @@ export interface WebResourceDetails extends WebResource {
   languagecode: number | null;
   createdon: string | null;
   modifiedon: string | null;
+  /** Full name of the user who last modified the record in Dataverse. */
+  modifiedbyname: string | null;
 }
 
 async function callDataverse(
@@ -141,9 +143,25 @@ export async function getWebResourceDetails(
   const res = await callDataverse(
     orgApiUrl,
     `webresourceset(${webresourceId})?$select=webresourceid,name,displayname,description,` +
-      "webresourcetype,ismanaged,languagecode,createdon,modifiedon"
+      "webresourcetype,ismanaged,languagecode,createdon,modifiedon" +
+      // modifiedby is a systemuser lookup; expanding it returns the user's name in the same request.
+      "&$expand=modifiedby($select=fullname)"
   );
-  return (await res.json()) as WebResourceDetails;
+  const data = (await res.json()) as Omit<WebResourceDetails, "modifiedbyname"> & {
+    modifiedby?: { fullname?: string | null } | null;
+  };
+  return {
+    webresourceid: data.webresourceid,
+    name: data.name,
+    displayname: data.displayname,
+    description: data.description,
+    webresourcetype: data.webresourcetype,
+    ismanaged: data.ismanaged,
+    languagecode: data.languagecode,
+    createdon: data.createdon,
+    modifiedon: data.modifiedon,
+    modifiedbyname: data.modifiedby?.fullname ?? null,
+  };
 }
 
 export async function getWebResourceContent(

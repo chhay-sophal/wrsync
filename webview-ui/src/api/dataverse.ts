@@ -28,6 +28,8 @@ export interface WebResourceDetails extends WebResource {
   languagecode: number | null;
   createdon: string | null;
   modifiedon: string | null;
+  /** Full name of the user who last modified the record in Dataverse. */
+  modifiedbyname: string | null;
 }
 
 export function listEnvironments(): Promise<DataverseEnvironment[]> {

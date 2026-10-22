@@ -66,6 +66,7 @@ export function WebResourceDetailsDialog({ orgApiUrl, webresourceId, linkedPath,
                   <DetailRow label="Language code" value={details.languagecode?.toString() ?? "—"} />
                   <DetailRow label="Created on" value={formatDate(details.createdon)} />
                   <DetailRow label="Modified on" value={formatDate(details.modifiedon)} />
+                  <DetailRow label="Modified by" value={details.modifiedbyname ?? "—"} />
                   <DetailRow label="Web resource ID" value={details.webresourceid} mono />
                   {linkedPath && <DetailRow label="Linked local file" value={linkedPath} mono />}
                 </div>
