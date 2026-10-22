@@ -6,6 +6,7 @@ All notable changes to the "wrsync" extension will be documented in this file.
 
 - Publish, Publish Selected, and Publish All now ask for confirmation first, listing the
   resources and the target environment host before anything is overwritten.
+- Unlinking a local file now asks for confirmation first.
 
 ## [0.0.2]
 

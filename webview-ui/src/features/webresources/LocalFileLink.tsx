@@ -5,6 +5,7 @@ import { openCompareDiff } from "../../api/compare";
 import { publishWebResources, updateWebResourceContent } from "../../api/dataverse";
 import { createLink, deleteLink, getLocalFileContent, type LocalFile, type ResourceLink } from "../../api/local";
 import { utf8ToBase64 } from "../../lib/base64";
+import { ConfirmDialog } from "../../components/ConfirmDialog";
 import { ConfirmPublishDialog } from "./ConfirmPublishDialog";
 
 interface Props {
@@ -39,6 +40,7 @@ export function LocalFileLink({
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [confirmingPublish, setConfirmingPublish] = useState(false);
+  const [confirmingUnlink, setConfirmingUnlink] = useState(false);
 
   const filteredFiles = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -66,6 +68,7 @@ export function LocalFileLink({
   }
 
   async function handleUnlink() {
+    setConfirmingUnlink(false);
     if (!link) return;
     setBusy(true);
     setError(null);
@@ -135,7 +138,7 @@ export function LocalFileLink({
               size="small"
               appearance="subtle"
               icon={<LinkDismissRegular />}
-              onClick={handleUnlink}
+              onClick={() => setConfirmingUnlink(true)}
               disabled={busy}
             >
               Unlink
@@ -169,6 +172,19 @@ export function LocalFileLink({
         onConfirm={handlePublish}
         onCancel={() => setConfirmingPublish(false)}
       />
+      <ConfirmDialog
+        open={confirmingUnlink}
+        title="Unlink local file?"
+        confirmLabel="Unlink"
+        confirmIcon={<LinkDismissRegular />}
+        onConfirm={handleUnlink}
+        onCancel={() => setConfirmingUnlink(false)}
+      >
+        <Text>
+          <Text weight="semibold">{webresourceName}</Text> will no longer be linked to{" "}
+          <Text weight="semibold">{link?.localPath}</Text>. Neither the file nor the web resource is changed.
+        </Text>
+      </ConfirmDialog>
     </div>
   );
 }
