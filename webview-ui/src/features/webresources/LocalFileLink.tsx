@@ -204,7 +204,7 @@ export function LocalFileLink({
       )}
       <ConfirmPublishDialog
         orgApiUrl={orgApiUrl}
-        names={confirmingPublish ? [webresourceName] : null}
+        items={confirmingPublish ? [{ id: webresourceId, name: webresourceName }] : null}
         onConfirm={handlePublish}
         onCancel={() => setConfirmingPublish(false)}
       />

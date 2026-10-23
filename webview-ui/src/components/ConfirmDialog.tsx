@@ -14,13 +14,23 @@ interface Props {
   title: ReactNode;
   confirmLabel: string;
   confirmIcon?: ReactElement;
+  confirmDisabled?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
   children: ReactNode;
 }
 
 /** Generic Cancel/confirm dialog for actions that change Dataverse or local link state. */
-export function ConfirmDialog({ open, title, confirmLabel, confirmIcon, onConfirm, onCancel, children }: Props) {
+export function ConfirmDialog({
+  open,
+  title,
+  confirmLabel,
+  confirmIcon,
+  confirmDisabled,
+  onConfirm,
+  onCancel,
+  children,
+}: Props) {
   return (
     <Dialog open={open} onOpenChange={(_, data) => !data.open && onCancel()}>
       <DialogSurface>
@@ -33,7 +43,7 @@ export function ConfirmDialog({ open, title, confirmLabel, confirmIcon, onConfir
             <Button appearance="secondary" onClick={onCancel}>
               Cancel
             </Button>
-            <Button appearance="primary" icon={confirmIcon} onClick={onConfirm}>
+            <Button appearance="primary" icon={confirmIcon} onClick={onConfirm} disabled={confirmDisabled}>
               {confirmLabel}
             </Button>
           </DialogActions>

@@ -6,6 +6,8 @@ All notable changes to the "wrsync" extension will be documented in this file.
 
 - Publishing now asks for confirmation first, listing the resources and the target
   environment host before anything is overwritten.
+- The publish confirmation warns when a resource was last changed in Dataverse by someone
+  else (with who and how long ago), so you don't silently overwrite a colleague's change.
 - Toolbar and card actions are now icon-only buttons with tooltips that appear on hover
   and keyboard focus and are read by screen readers; disabled buttons still show theirs.
   The toolbar publish button shows the number of selected resources.

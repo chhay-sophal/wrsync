@@ -227,14 +227,15 @@ export function WebResourceList({
     setSelectedIds(new Set());
   }
 
-  const pendingPublishNames = useMemo(() => {
+  const pendingPublishItems = useMemo(() => {
     if (!pendingPublishIds) return null;
-    return pendingPublishIds.map(
-      (id) =>
+    return pendingPublishIds.map((id) => ({
+      id,
+      name:
         resources?.find((r) => r.webresourceid === id)?.name ??
         links.find((l) => l.webresourceId === id)?.webresourceName ??
-        id
-    );
+        id,
+    }));
   }, [pendingPublishIds, resources, links]);
 
   // Persisted per-solution so switching solutions doesn't show another solution's filters,
@@ -427,7 +428,7 @@ export function WebResourceList({
       <WebResourceDetailsDialog orgApiUrl={orgApiUrl} webresourceId={detailsId} onClose={() => setDetailsId(null)} />
       <ConfirmPublishDialog
         orgApiUrl={orgApiUrl}
-        names={pendingPublishNames}
+        items={pendingPublishItems}
         onConfirm={confirmPublish}
         onCancel={() => setPendingPublishIds(null)}
       />

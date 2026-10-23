@@ -48,6 +48,17 @@ export function getWebResourceDetails(orgApiUrl: string, webresourceId: string):
   return callRpc<WebResourceDetails>("dataverse.getWebResourceDetails", { orgApiUrl, webresourceId });
 }
 
+export interface OthersChange {
+  webresourceId: string;
+  modifiedbyname: string | null;
+  modifiedon: string | null;
+}
+
+/** The given web resources whose last modifier in Dataverse isn't the signed-in user. */
+export function getOthersChanges(orgApiUrl: string, webresourceIds: string[]): Promise<OthersChange[]> {
+  return callRpc<OthersChange[]>("dataverse.getOthersChanges", { orgApiUrl, webresourceIds });
+}
+
 export function getWebResourceContent(orgApiUrl: string, webresourceId: string): Promise<string> {
   return callRpc<string>("dataverse.getWebResourceContent", { orgApiUrl, webresourceId });
 }

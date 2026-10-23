@@ -164,6 +164,45 @@ export async function getWebResourceDetails(
   };
 }
 
+export interface OthersChange {
+  webresourceId: string;
+  modifiedbyname: string | null;
+  modifiedon: string | null;
+}
+
+/** Returns the given web resources whose last modifier in Dataverse isn't the signed-in user,
+ * so a publish can warn before overwriting someone else's change. Every publish from wrsync
+ * PATCHes the content first, which records the signed-in user as modifier - so "last modified
+ * by someone else" means a change this user hasn't seen through wrsync. */
+export async function getOthersChanges(orgApiUrl: string, webresourceIds: string[]): Promise<OthersChange[]> {
+  if (webresourceIds.length === 0) {return [];}
+  const filter = webresourceIds.map((id) => `webresourceid eq ${id}`).join(" or ");
+  const [whoAmIRes, resourcesRes] = await Promise.all([
+    callDataverse(orgApiUrl, "WhoAmI"),
+    callDataverse(
+      orgApiUrl,
+      `webresourceset?$select=webresourceid,modifiedon,_modifiedby_value` +
+        `&$expand=modifiedby($select=fullname)&$filter=${filter}`
+    ),
+  ]);
+  const { UserId } = (await whoAmIRes.json()) as { UserId: string };
+  const data = (await resourcesRes.json()) as {
+    value: {
+      webresourceid: string;
+      modifiedon: string | null;
+      _modifiedby_value: string | null;
+      modifiedby?: { fullname?: string | null } | null;
+    }[];
+  };
+  return data.value
+    .filter((r) => r._modifiedby_value && r._modifiedby_value.toLowerCase() !== UserId.toLowerCase())
+    .map((r) => ({
+      webresourceId: r.webresourceid,
+      modifiedbyname: r.modifiedby?.fullname ?? null,
+      modifiedon: r.modifiedon,
+    }));
+}
+
 export async function getWebResourceContent(
   orgApiUrl: string,
   webresourceId: string

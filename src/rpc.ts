@@ -3,6 +3,7 @@ import { getAuthStatus, login, logout } from './auth';
 import { openCompareDiff } from './compareProvider';
 import {
 	createWebResource,
+	getOthersChanges,
 	getWebResourceContent,
 	getWebResourceDetails,
 	listEnvironments,
@@ -41,6 +42,8 @@ const handlers: Record<string, Handler> = {
 		listWebResourcesForSolution(params.orgApiUrl, params.solutionId),
 	'dataverse.getWebResourceDetails': (params: { orgApiUrl: string; webresourceId: string }) =>
 		getWebResourceDetails(params.orgApiUrl, params.webresourceId),
+	'dataverse.getOthersChanges': (params: { orgApiUrl: string; webresourceIds: string[] }) =>
+		getOthersChanges(params.orgApiUrl, params.webresourceIds),
 	'dataverse.getWebResourceContent': (params: { orgApiUrl: string; webresourceId: string }) =>
 		getWebResourceContent(params.orgApiUrl, params.webresourceId),
 	'dataverse.updateWebResourceContent': (params: { orgApiUrl: string; webresourceId: string; base64Content: string }) =>
