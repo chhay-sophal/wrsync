@@ -172,9 +172,33 @@ you don't need a separate step for that.
 ### Running it
 
 Open the folder in VS Code and press **F5** to launch an Extension Development Host with
-the extension loaded. Reopen the sidebar there after any change to `src/` or
-`webview-ui/` to pick it up (a full **Developer: Reload Window** is needed after changing
-`package.json`'s `contributes`, since that's read at activation).
+the extension loaded. The default build task watches both parts and rebuilds on save; to
+see a change in the Extension Development Host:
+
+- `webview-ui/` (the UI): run **Developer: Reload Webviews**. Give the rebuild a second
+  first; reloading mid-build shows a blank view.
+- `src/` (the extension): restart debugging (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>F5</kbd>).
+- `package.json`'s `contributes`: **Developer: Reload Window**, since that's read at
+  activation.
+
+### Working on the UI in a browser
+
+```
+npm run dev:mock
+```
+
+Serves the UI at http://localhost:5173 with Vite's hot reload, against fake data instead of
+VS Code and Dataverse, so edits show up as you type. The fake extension lives in
+`webview-ui/src/dev/mockVscode.ts`: it answers every call the UI makes, from a fixture that
+covers each card state (in sync, modified, changed by someone else, mismatched link,
+unlinked, binary, managed). It's only loaded in this mode, never in the extension build.
+
+- `?view=linkSuggestions` opens the Suggested links page; `?latency=1000` slows calls down
+  to check loading states; `?signedOut` starts signed out.
+- In the browser console, `wrsyncMock.editLocalFile("src/scripts/account.js", "...")`
+  simulates saving a local file, and `wrsyncMock.state` shows the fake data.
+- State resets on reload. Use it for building and styling, then check against real data
+  with F5 before committing.
 
 ### Before committing
 
