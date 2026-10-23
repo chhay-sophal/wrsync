@@ -2,6 +2,9 @@ import * as vscode from 'vscode';
 import type { DataverseEnvironment, Solution } from './dataverseClient';
 
 export type ManagedFilter = 'all' | 'managed' | 'unmanaged';
+/** Linked to a local file or not - one setting, since "linked only" and "unlinked only" are
+ * mutually exclusive. */
+export type LinkFilter = 'all' | 'linked' | 'unlinked';
 export type SortColumn = 'name' | 'displayname' | 'type' | 'managed';
 
 export interface Filters {
@@ -10,8 +13,7 @@ export interface Filters {
 	managed: ManagedFilter;
 	/** Only resources whose linked local file differs from Dataverse. */
 	modifiedOnly: boolean;
-	/** Only resources linked to a local file. */
-	linkedOnly: boolean;
+	link: LinkFilter;
 }
 
 export interface SortState {
@@ -19,7 +21,7 @@ export interface SortState {
 	direction: 'asc' | 'desc';
 }
 
-export const EMPTY_FILTERS: Filters = { types: [], managed: 'all', modifiedOnly: false, linkedOnly: false };
+export const EMPTY_FILTERS: Filters = { types: [], managed: 'all', modifiedOnly: false, link: 'all' };
 
 const KEY_ENVIRONMENT = 'wrsync.environment';
 const KEY_SOLUTION = 'wrsync.solution';
@@ -67,7 +69,10 @@ function viewKey(): string | undefined {
 
 export function getFilters(): Filters {
 	const key = viewKey();
-	return { ...EMPTY_FILTERS, ...(key ? memento.get<{ filters?: Filters }>(key)?.filters : undefined) };
+	const stored = key ? memento.get<{ filters?: Partial<Filters> & { linkedOnly?: boolean } }>(key)?.filters : undefined;
+	const { linkedOnly, ...filters } = stored ?? {};
+	// Filters saved before "linked only" became the `link` setting keep their meaning.
+	return { ...EMPTY_FILTERS, ...(linkedOnly ? { link: 'linked' as const } : {}), ...filters };
 }
 
 export function getSort(): SortState | undefined {
@@ -90,7 +95,7 @@ export async function setSort(sort: SortState | undefined): Promise<void> {
 }
 
 export function filtersActive(filters = getFilters()): boolean {
-	return filters.types.length > 0 || filters.managed !== 'all' || filters.modifiedOnly || filters.linkedOnly;
+	return filters.types.length > 0 || filters.managed !== 'all' || filters.modifiedOnly || filters.link !== 'all';
 }
 
 /** On sign-out: forget the environment and solution (they belong to the signed-in account). */
@@ -112,5 +117,5 @@ function updateContextKeys(): void {
 	vscode.commands.executeCommand('setContext', 'wrsync.hasSolution', getSolution() !== undefined);
 	vscode.commands.executeCommand('setContext', 'wrsync.filtersActive', filtersActive(filters));
 	vscode.commands.executeCommand('setContext', 'wrsync.modifiedOnly', filters.modifiedOnly);
-	vscode.commands.executeCommand('setContext', 'wrsync.linkedOnly', filters.linkedOnly);
+	vscode.commands.executeCommand('setContext', 'wrsync.linkFilter', filters.link);
 }

@@ -112,6 +112,16 @@
         "category": "Web Resource Sync"
       },
       {
+        "command": "wrsync.showUnlinkedOnly",
+        "title": "Show Unlinked Only",
+        "category": "Web Resource Sync"
+      },
+      {
+        "command": "wrsync.showAllNotOnlyUnlinked",
+        "title": "Show Unlinked Only ✓",
+        "category": "Web Resource Sync"
+      },
+      {
         "command": "wrsync.clearFilters",
         "title": "Clear Filters",
         "category": "Web Resource Sync",
@@ -227,12 +237,22 @@
         {
           "command": "wrsync.showLinkedOnly",
           "group": "1_filter@4",
-          "when": "!wrsync.linkedOnly"
+          "when": "wrsync.linkFilter != linked"
         },
         {
           "command": "wrsync.showAllNotOnlyLinked",
           "group": "1_filter@4",
-          "when": "wrsync.linkedOnly"
+          "when": "wrsync.linkFilter == linked"
+        },
+        {
+          "command": "wrsync.showUnlinkedOnly",
+          "group": "1_filter@5",
+          "when": "wrsync.linkFilter != unlinked"
+        },
+        {
+          "command": "wrsync.showAllNotOnlyUnlinked",
+          "group": "1_filter@5",
+          "when": "wrsync.linkFilter == unlinked"
         },
         {
           "command": "wrsync.clearFilters",
@@ -262,12 +282,22 @@
         {
           "command": "wrsync.showLinkedOnly",
           "group": "1_filter@4",
-          "when": "!wrsync.linkedOnly"
+          "when": "wrsync.linkFilter != linked"
         },
         {
           "command": "wrsync.showAllNotOnlyLinked",
           "group": "1_filter@4",
-          "when": "wrsync.linkedOnly"
+          "when": "wrsync.linkFilter == linked"
+        },
+        {
+          "command": "wrsync.showUnlinkedOnly",
+          "group": "1_filter@5",
+          "when": "wrsync.linkFilter != unlinked"
+        },
+        {
+          "command": "wrsync.showAllNotOnlyUnlinked",
+          "group": "1_filter@5",
+          "when": "wrsync.linkFilter == unlinked"
         },
         {
           "command": "wrsync.clearFilters",
@@ -493,6 +523,14 @@
         },
         {
           "command": "wrsync.showLinkedOnly",
+          "when": "wrsync.signedIn && wrsync.hasSolution"
+        },
+        {
+          "command": "wrsync.showAllNotOnlyUnlinked",
+          "when": "false"
+        },
+        {
+          "command": "wrsync.showUnlinkedOnly",
           "when": "wrsync.signedIn && wrsync.hasSolution"
         }
       ]

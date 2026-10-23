@@ -58,9 +58,9 @@ The view lists the solution's web resources, with file icons from your icon them
   sync status, and who last modified it in Dataverse.
 - **Find**: with the view focused, start typing (or press <kbd>Ctrl</kbd>+<kbd>F</kbd>) to
   find or filter by name — VS Code's built-in tree find.
-- **Filter** (funnel button): by type, by managed state, **Show Modified Only**, or
-  **Show Linked Only**. The funnel turns solid while a filter is on; **Clear Filters**
-  resets it.
+- **Filter** (funnel button): by type, by managed state, **Show Modified Only**, **Show
+  Linked Only**, or **Show Unlinked Only** (handy for finding what still needs linking).
+  The funnel turns solid while a filter is on; **Clear Filters** resets it.
 - **Sort By...** (in the **...** menu): name, display name, type, or managed state.
 - **Show Details** (right-click) adds the description, dates, and ID, with buttons to
   copy the name or ID.

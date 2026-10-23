@@ -234,7 +234,7 @@ export class WebResourceTree
 				(filters.types.length === 0 || filters.types.includes(n.resource.webresourcetype)) &&
 				(filters.managed === 'all' || (filters.managed === 'managed') === n.resource.ismanaged) &&
 				(!filters.modifiedOnly || n.modified) &&
-				(!filters.linkedOnly || n.link !== undefined)
+				(filters.link === 'all' || (filters.link === 'linked') === (n.link !== undefined))
 		);
 		const sort = getSort() ?? { column: 'name', direction: 'asc' };
 		const dir = sort.direction === 'asc' ? 1 : -1;

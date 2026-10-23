@@ -16,6 +16,7 @@ import {
 	setFilters,
 	setSolution,
 	setSort,
+	type LinkFilter,
 	type ManagedFilter,
 	type SortColumn,
 } from './state';
@@ -274,19 +275,27 @@ export function registerWebResourceCommands(context: vscode.ExtensionContext, tr
 			if (picked) {await setFilters({ ...filters, managed: picked.value });}
 		})
 	);
+	// Two commands per toggle so the Filter menu can show a check mark on the "on" one.
+	// Modified resources are always linked, so "modified only" and "unlinked only" switch each
+	// other off rather than combine into an always-empty list.
 	const toggleModifiedOnly = guarded('Show modified only', async () => {
 		const filters = getFilters();
-		await setFilters({ ...filters, modifiedOnly: !filters.modifiedOnly });
+		const modifiedOnly = !filters.modifiedOnly;
+		await setFilters({ ...filters, modifiedOnly, link: modifiedOnly && filters.link === 'unlinked' ? 'all' : filters.link });
 	});
 	register('wrsync.showModifiedOnly', toggleModifiedOnly);
 	register('wrsync.showAllNotOnlyModified', toggleModifiedOnly);
-	// Two commands per toggle so the Filter menu can show a check mark on the "on" one.
-	const toggleLinkedOnly = guarded('Show linked only', async () => {
-		const filters = getFilters();
-		await setFilters({ ...filters, linkedOnly: !filters.linkedOnly });
-	});
-	register('wrsync.showLinkedOnly', toggleLinkedOnly);
-	register('wrsync.showAllNotOnlyLinked', toggleLinkedOnly);
+	/** Turns a link filter on (switching the other one off), or back off. */
+	const toggleLink = (value: Exclude<LinkFilter, 'all'>) =>
+		guarded(`Show ${value} only`, async () => {
+			const filters = getFilters();
+			const link = filters.link === value ? 'all' : value;
+			await setFilters({ ...filters, link, modifiedOnly: link === 'unlinked' ? false : filters.modifiedOnly });
+		});
+	register('wrsync.showLinkedOnly', toggleLink('linked'));
+	register('wrsync.showAllNotOnlyLinked', toggleLink('linked'));
+	register('wrsync.showUnlinkedOnly', toggleLink('unlinked'));
+	register('wrsync.showAllNotOnlyUnlinked', toggleLink('unlinked'));
 	register('wrsync.clearFilters', guarded('Clear filters', () => setFilters(EMPTY_FILTERS)));
 	register(
 		'wrsync.sortBy',
