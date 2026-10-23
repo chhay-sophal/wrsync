@@ -19,7 +19,7 @@ interface Props {
   link: ResourceLink | undefined;
   isModified: boolean;
   onLinksChanged: () => void;
-  onPublished: (webresourceId: string, localPath: string) => void;
+  onSynced: (webresourceId: string, localPath: string) => void;
 }
 
 /** Memoized so that editing one card (selection, linking, publishing) doesn't force every
@@ -36,7 +36,7 @@ function WebResourceCardImpl({
   link,
   isModified,
   onLinksChanged,
-  onPublished,
+  onSynced,
 }: Props) {
   return (
     <Card
@@ -91,7 +91,7 @@ function WebResourceCardImpl({
           link={link}
           isModified={isModified}
           onLinksChanged={onLinksChanged}
-          onPublished={onPublished}
+          onSynced={onSynced}
         />
       </div>
     </Card>

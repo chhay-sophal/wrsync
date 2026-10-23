@@ -139,7 +139,7 @@ export function WebResourceList({
     }
   }, [modifiedPaths, links, checkOneModified]);
 
-  const handleCardPublished = useCallback(
+  const handleCardSynced = useCallback(
     (webresourceId: string, localPath: string) => {
       setModifiedStatus((prev) => new Map(prev).set(webresourceId, false));
       onFilePublished(localPath);
@@ -419,7 +419,7 @@ export function WebResourceList({
             link={links.find((l) => l.webresourceId === r.webresourceid)}
             isModified={modifiedStatus.get(r.webresourceid) ?? false}
             onLinksChanged={refreshLinks}
-            onPublished={handleCardPublished}
+            onSynced={handleCardSynced}
           />
         ))}
         {displayedResources.length === 0 && <Text>No web resources match the current filters.</Text>}

@@ -54,3 +54,24 @@ export async function getWorkspaceFileContent(relativePath: string): Promise<str
 	const bytes = await vscode.workspace.fs.readFile(uri);
 	return textDecoder.decode(bytes);
 }
+
+/** Replaces a workspace file's whole content and saves it. Goes through a WorkspaceEdit on the
+ * TextDocument rather than writing bytes to disk, so an open editor updates in place (no
+ * "file changed on disk" conflict) and the document keeps its own line endings and encoding.
+ * Refuses if the document has unsaved changes, which would otherwise be overwritten too. */
+export async function replaceWorkspaceFileContent(relativePath: string, content: string): Promise<void> {
+	const folder = vscode.workspace.workspaceFolders?.[0];
+	if (!folder) {
+		throw new Error('No workspace folder is open');
+	}
+	const document = await vscode.workspace.openTextDocument(vscode.Uri.joinPath(folder.uri, relativePath));
+	if (document.isDirty) {
+		throw new Error(`${relativePath} has unsaved changes. Save or discard them first.`);
+	}
+	const fullRange = document.validateRange(new vscode.Range(0, 0, document.lineCount, 0));
+	const edit = new vscode.WorkspaceEdit();
+	edit.replace(document.uri, fullRange, content);
+	if (!(await vscode.workspace.applyEdit(edit)) || !(await document.save())) {
+		throw new Error(`Couldn't write ${relativePath}`);
+	}
+}

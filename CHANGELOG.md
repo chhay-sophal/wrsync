@@ -8,6 +8,9 @@ All notable changes to the "wrsync" extension will be documented in this file.
   environment host before anything is overwritten.
 - The publish confirmation warns when a resource was last changed in Dataverse by someone
   else (with who and how long ago), so you don't silently overwrite a colleague's change.
+- Added **Pull** on modified cards: replaces the linked local file with the current
+  Dataverse content in one step (after a confirmation). Open editors update in place, the
+  file keeps its line endings, and files with unsaved changes are left alone.
 - Toolbar and card actions are now icon-only buttons with tooltips that appear on hover
   and keyboard focus and are read by screen readers; disabled buttons still show theirs.
   The toolbar publish button shows the number of selected resources.

@@ -77,6 +77,11 @@ over a changed block and click its arrow to copy that block into your local file
 Dataverse's version block-by-block instead of publishing (overwrite) or discarding
 (ignore) the whole file at once. Leaving a block alone keeps your local version.
 
+To take the Dataverse version wholesale instead, click **Pull** (the cloud-download
+button) on the card. It replaces the linked local file's content with what's in Dataverse,
+after a confirmation. If the file is open with unsaved changes, Pull refuses until you save
+or discard them, so nothing unsaved is lost silently.
+
 ### 7. Publish your changes
 
 - Click the publish (cloud) button on an individual card once it shows **Modified**.

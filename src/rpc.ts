@@ -14,7 +14,7 @@ import {
 } from './dataverseClient';
 import { createLink, deleteLink, listLinks, type ResourceLink } from './linksStore';
 import { scheduleModifiedCountRefresh } from './modifiedTracker';
-import { getWorkspaceFileContent, listWorkspaceFiles } from './workspaceFiles';
+import { getWorkspaceFileContent, listWorkspaceFiles, replaceWorkspaceFileContent } from './workspaceFiles';
 
 interface RpcRequest {
 	type: 'rpc';
@@ -59,6 +59,15 @@ const handlers: Record<string, Handler> = {
 	}) => createWebResource(params.orgApiUrl, params.solutionUniqueName, params.resource),
 	'workspace.listFiles': () => listWorkspaceFiles(),
 	'workspace.getFileContent': (params: { path: string }) => getWorkspaceFileContent(params.path),
+	// Fetched and written here rather than round-tripping the content through the webview.
+	'workspace.pullFromDataverse': async (params: { orgApiUrl: string; webresourceId: string; localPath: string }) => {
+		const base64 = await getWebResourceContent(params.orgApiUrl, params.webresourceId);
+		// A leading BOM is an encoding marker, not content; the document keeps its own encoding.
+		const text = Buffer.from(base64, 'base64').toString('utf-8');
+		const content = text.charCodeAt(0) === 0xfeff ? text.slice(1) : text;
+		await replaceWorkspaceFileContent(params.localPath, content);
+		scheduleModifiedCountRefresh();
+	},
 	'links.list': async () => listLinks(),
 	'links.create': async (params: Omit<ResourceLink, 'id'>) => {
 		const link = await createLink(params);

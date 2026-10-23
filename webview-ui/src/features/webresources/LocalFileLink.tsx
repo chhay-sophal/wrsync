@@ -1,9 +1,21 @@
 import { Badge, Combobox, Option, Text, Tooltip, tokens } from "@fluentui/react-components";
-import { BranchCompareRegular, CloudArrowUpRegular, LinkDismissRegular } from "@fluentui/react-icons";
+import {
+  BranchCompareRegular,
+  CloudArrowDownRegular,
+  CloudArrowUpRegular,
+  LinkDismissRegular,
+} from "@fluentui/react-icons";
 import { useMemo, useState } from "react";
 import { openCompareDiff } from "../../api/compare";
 import { publishWebResources, updateWebResourceContent } from "../../api/dataverse";
-import { createLink, deleteLink, getLocalFileContent, type LocalFile, type ResourceLink } from "../../api/local";
+import {
+  createLink,
+  deleteLink,
+  getLocalFileContent,
+  pullFromDataverse,
+  type LocalFile,
+  type ResourceLink,
+} from "../../api/local";
 import { utf8ToBase64 } from "../../lib/base64";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
 import { IconButton } from "../../components/IconButton";
@@ -24,7 +36,7 @@ interface Props {
    * "Modified only" filter). */
   isModified: boolean;
   onLinksChanged: () => void;
-  onPublished: (webresourceId: string, localPath: string) => void;
+  onSynced: (webresourceId: string, localPath: string) => void;
 }
 
 export function LocalFileLink({
@@ -38,13 +50,14 @@ export function LocalFileLink({
   link,
   isModified,
   onLinksChanged,
-  onPublished,
+  onSynced,
 }: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [confirmingPublish, setConfirmingPublish] = useState(false);
   const [confirmingUnlink, setConfirmingUnlink] = useState(false);
+  const [confirmingPull, setConfirmingPull] = useState(false);
 
   const extensions = linkableExtensions(webresourcetype);
   const typeLabel = TYPE_LABELS[webresourcetype] ?? `Type ${webresourcetype}`;
@@ -106,7 +119,22 @@ export function LocalFileLink({
       const content = await getLocalFileContent(link.localPath);
       await updateWebResourceContent(orgApiUrl, webresourceId, utf8ToBase64(content));
       await publishWebResources(orgApiUrl, [webresourceId]);
-      onPublished(webresourceId, link.localPath);
+      onSynced(webresourceId, link.localPath);
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handlePull() {
+    setConfirmingPull(false);
+    if (!link) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await pullFromDataverse(orgApiUrl, webresourceId, link.localPath);
+      onSynced(webresourceId, link.localPath);
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -164,6 +192,15 @@ export function LocalFileLink({
                 label="Compare Dataverse content with the local file"
               />
             )}
+            {isModified && !linkMismatched && (
+              <IconButton
+                appearance="secondary"
+                icon={<CloudArrowDownRegular />}
+                onClick={() => setConfirmingPull(true)}
+                disabled={busy}
+                label="Pull: replace the local file with the Dataverse version"
+              />
+            )}
             <IconButton
               appearance="subtle"
               icon={<LinkDismissRegular />}
@@ -219,6 +256,20 @@ export function LocalFileLink({
         <Text>
           <Text weight="semibold">{webresourceName}</Text> will no longer be linked to{" "}
           <Text weight="semibold">{link?.localPath}</Text>. Neither the file nor the web resource is changed.
+        </Text>
+      </ConfirmDialog>
+      <ConfirmDialog
+        open={confirmingPull}
+        title="Replace local file?"
+        confirmLabel="Pull"
+        confirmIcon={<CloudArrowDownRegular />}
+        onConfirm={handlePull}
+        onCancel={() => setConfirmingPull(false)}
+      >
+        <Text>
+          <Text weight="semibold">{link?.localPath}</Text> will be overwritten with the current Dataverse content
+          of <Text weight="semibold">{webresourceName}</Text>, and your local changes to it will be lost. Use Compare
+          first to keep some of them.
         </Text>
       </ConfirmDialog>
     </div>

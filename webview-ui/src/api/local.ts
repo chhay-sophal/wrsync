@@ -33,3 +33,8 @@ export function deleteLink(id: string): Promise<void> {
 export function getLocalFileContent(path: string): Promise<string> {
   return callRpc<string>("workspace.getFileContent", { path });
 }
+
+/** Overwrites the linked local file with the web resource's current Dataverse content. */
+export function pullFromDataverse(orgApiUrl: string, webresourceId: string, localPath: string): Promise<void> {
+  return callRpc<void>("workspace.pullFromDataverse", { orgApiUrl, webresourceId, localPath });
+}
