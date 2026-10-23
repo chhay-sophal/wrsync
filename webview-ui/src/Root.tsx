@@ -1,6 +1,7 @@
 import { FluentProvider, webDarkTheme, webLightTheme } from "@fluentui/react-components";
 import { useEffect, useState } from "react";
 import App from "./App";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import { LinkSuggestionsPage } from "./features/webresources/LinkSuggestionsPage";
 
 /** Which page this webview shows: the extension sets data-view on #root for editor-tab
@@ -29,11 +30,14 @@ export function Root() {
 
   return (
     <FluentProvider theme={isDark ? webDarkTheme : webLightTheme}>
-      {view === "linkSuggestions" ? (
-        <LinkSuggestionsPage />
-      ) : (
-        <App isDark={isDark} onToggleTheme={() => setIsDark((d) => !d)} />
-      )}
+      {/* Inside the provider so the fallback screen is themed like the rest. */}
+      <ErrorBoundary>
+        {view === "linkSuggestions" ? (
+          <LinkSuggestionsPage />
+        ) : (
+          <App isDark={isDark} onToggleTheme={() => setIsDark((d) => !d)} />
+        )}
+      </ErrorBoundary>
     </FluentProvider>
   );
 }

@@ -20,6 +20,8 @@ All notable changes to the "wrsync" extension will be documented in this file.
   saves first, confirms (with the changed-by-someone-else warning), and the sidebar's
   Modified state updates afterwards. The extension now activates on startup so the button
   is available before the sidebar is opened.
+- An unexpected error in the sidebar or the Suggested links tab now shows a recovery screen
+  (Try again / Reload / Reset & reload, plus error details) instead of a blank view.
 - Faster modified-check for large solutions: linked resources' Dataverse content is now
   fetched in batched requests (up to 50 per request) instead of one request per resource,
   for both the cards and the Activity Bar badge, which now share a single comparison.

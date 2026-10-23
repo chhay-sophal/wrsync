@@ -54,6 +54,9 @@ export function openLinkSuggestionsPanel(data: LinkSuggestionsData): void {
 			postInit();
 		} else if (message.type === 'close') {
 			panel?.dispose();
+		} else if (message.type === 'reload' && panel) {
+			// From the page's error screen; the reloaded page reports ready and gets the data again.
+			panel.webview.html = getHtml(panel.webview, webviewUiDist, 'linkSuggestions');
 		} else if (message.type === 'rpc') {
 			dispatchRpc(panel!.webview, message as { type: 'rpc'; id: string; method: string; params?: unknown });
 		}

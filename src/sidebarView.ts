@@ -36,6 +36,9 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
 		webviewView.webview.onDidReceiveMessage((message: { type: string; id?: string; method?: string; params?: unknown }) => {
 			if (message.type === 'rpc') {
 				dispatchRpc(webviewView.webview, message as { type: 'rpc'; id: string; method: string; params?: unknown });
+			} else if (message.type === 'reload') {
+				// From the webview's error screen: re-setting the HTML restarts it from scratch.
+				webviewView.webview.html = getHtml(webviewView.webview, webviewUiDist);
 			}
 		});
 
