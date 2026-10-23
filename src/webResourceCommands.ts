@@ -54,6 +54,18 @@ function one(tree: WebResourceTree, node?: WebResourceNode): WebResourceNode | u
 	return targets(tree, node)[0];
 }
 
+/** Options a tree item's click passes to Compare / Open Local File, so the editor opens
+ * without taking focus from the tree (like single-clicking a file in Explorer). */
+export interface ItemClickOptions {
+	preserveFocus: true;
+}
+
+/** Context menus call item commands with (node, selectedNodes) - only the click passes the
+ * options object, so explicit menu actions still focus the editor. */
+function preservesFocus(options: unknown): boolean {
+	return !Array.isArray(options) && (options as ItemClickOptions | undefined)?.preserveFocus === true;
+}
+
 function requireEnvironment() {
 	const environment = getEnvironment();
 	if (!environment) {throw new Error('Pick an environment first.');}
@@ -386,7 +398,7 @@ export function registerWebResourceCommands(context: vscode.ExtensionContext, tr
 	);
 	register(
 		'wrsync.compare',
-		guarded('Compare', async (node?: WebResourceNode) => {
+		guarded('Compare', async (node?: WebResourceNode, options?: unknown) => {
 			const target = one(tree, node);
 			if (!target?.link) {return;}
 			await openCompareDiff({
@@ -394,16 +406,20 @@ export function registerWebResourceCommands(context: vscode.ExtensionContext, tr
 				webresourceId: target.resource.webresourceid,
 				webresourceName: target.resource.name,
 				localPath: target.link.localPath,
+				preserveFocus: preservesFocus(options),
 			});
 		})
 	);
 	register(
 		'wrsync.openLocalFile',
-		guarded('Open local file', async (node?: WebResourceNode) => {
+		guarded('Open local file', async (node?: WebResourceNode, options?: unknown) => {
 			const target = one(tree, node);
 			const folder = vscode.workspace.workspaceFolders?.[0];
 			if (!target?.link || !folder) {return;}
-			await vscode.window.showTextDocument(vscode.Uri.joinPath(folder.uri, target.link.localPath), { preview: true });
+			await vscode.window.showTextDocument(vscode.Uri.joinPath(folder.uri, target.link.localPath), {
+				preview: true,
+				preserveFocus: preservesFocus(options),
+			});
 		})
 	);
 	register(

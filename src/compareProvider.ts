@@ -28,6 +28,8 @@ export async function openCompareDiff(params: {
 	webresourceId: string;
 	webresourceName: string;
 	localPath: string;
+	/** Open as a preview tab and leave focus where it is (e.g. on the clicked tree item). */
+	preserveFocus?: boolean;
 }): Promise<void> {
 	const folder = vscode.workspace.workspaceFolders?.[0];
 	if (!folder) {
@@ -45,10 +47,14 @@ export async function openCompareDiff(params: {
 	}
 
 	const localUri = vscode.Uri.joinPath(folder.uri, params.localPath);
+	const options: vscode.TextDocumentShowOptions | undefined = params.preserveFocus
+		? { preview: true, preserveFocus: true }
+		: undefined;
 	await vscode.commands.executeCommand(
 		'vscode.diff',
 		remoteUri,
 		localUri,
-		`${params.webresourceName} (Dataverse ↔ Local)`
+		`${params.webresourceName} (Dataverse ↔ Local)`,
+		options
 	);
 }

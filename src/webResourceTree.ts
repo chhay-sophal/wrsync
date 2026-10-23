@@ -6,6 +6,7 @@ import { listLinks, onDidChangeLinks, type ResourceLink } from './linksStore';
 import { checkLinksModified, onDidChangeRemoteContent } from './modifiedTracker';
 import { filtersActive, getEnvironment, getFilters, getSolution, getSort, onDidChangeState } from './state';
 import { isLinkableFile, linkableExtensions, typeLabel } from './webResourceTypes';
+import type { ItemClickOptions } from './webResourceCommands';
 
 /** Gives each tree item a resourceUri so VS Code treats it like a file: the icon theme picks an
  * icon from the name's extension, and the decoration provider below adds the "M" badge and
@@ -265,11 +266,13 @@ export class WebResourceTree
 		item.iconPath = vscode.ThemeIcon.File;
 		item.description = link?.localPath;
 		item.contextValue = contextValue(node);
-		// Click: compare a modified resource; open the local file of an in-sync linked one.
+		// Click: compare a modified resource; open the local file of an in-sync linked one. Both
+		// open as a preview without taking focus, so the tree keeps focus (like Explorer).
+		const click: ItemClickOptions = { preserveFocus: true };
 		if (canSync(node)) {
-			item.command = { command: 'wrsync.compare', title: 'Compare', arguments: [node] };
+			item.command = { command: 'wrsync.compare', title: 'Compare', arguments: [node, click] };
 		} else if (link && !node.mismatched) {
-			item.command = { command: 'wrsync.openLocalFile', title: 'Open Local File', arguments: [node] };
+			item.command = { command: 'wrsync.openLocalFile', title: 'Open Local File', arguments: [node, click] };
 		}
 		item.tooltip = this.tooltip(node);
 		return item;
