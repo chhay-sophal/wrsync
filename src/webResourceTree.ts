@@ -78,6 +78,7 @@ export class WebResourceTree
 	private nodes = new Map<string, WebResourceNode>();
 	private modified = new Map<string, boolean>();
 	private loadError: string | undefined;
+	private loading = false;
 	private loadGeneration = 0;
 	private readonly disposables: vscode.Disposable[] = [];
 
@@ -137,11 +138,14 @@ export class WebResourceTree
 		this.loadedFor = this.scopeKey();
 		this.resources = undefined;
 		this.loadError = undefined;
+		this.loading = false;
 		this.modified.clear();
 		this.render();
 		if (!environment || !solution || !(await getAuthStatus()).signedIn) {return;}
+		if (generation !== this.loadGeneration) {return;}
 
-		this.view.message = 'Loading web resources...';
+		this.loading = true;
+		this.render();
 		try {
 			const resources = await listWebResourcesForSolution(environment.apiUrl, solution.solutionid);
 			if (generation !== this.loadGeneration) {return;}
@@ -150,6 +154,7 @@ export class WebResourceTree
 			if (generation !== this.loadGeneration) {return;}
 			this.loadError = (err as Error).message;
 		}
+		this.loading = false;
 		this.render();
 		await this.checkModified();
 	}
@@ -201,13 +206,20 @@ export class WebResourceTree
 		this.view.description = environment && solution ? `${environment.displayName} · ${solution.friendlyname}` : undefined;
 		const filters = getFilters();
 		const shown = this.visibleNodes().length;
+		// Decided from scratch on every render - every branch assigns, so nothing from a previous
+		// state (e.g. "Filtered: ..." before signing out) can linger.
 		if (this.loadError) {
 			this.view.message = `Couldn't load web resources: ${this.loadError}`;
-		} else if (this.resources?.length === 0) {
+		} else if (this.loading) {
+			this.view.message = 'Loading web resources...';
+		} else if (!this.resources) {
+			// Signed out or no solution picked: the welcome content explains what to do.
+			this.view.message = undefined;
+		} else if (this.resources.length === 0) {
 			this.view.message = 'No web resources in this solution.';
-		} else if (this.resources && filtersActive(filters)) {
+		} else if (filtersActive(filters)) {
 			this.view.message = shown === 0 ? 'No web resources match the current filters.' : `Filtered: showing ${shown} of ${this.resources.length}.`;
-		} else if (this.resources) {
+		} else {
 			this.view.message = undefined;
 		}
 		this.treeChanged.fire();
