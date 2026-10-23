@@ -175,8 +175,10 @@ Open the folder in VS Code and press **F5** to launch an Extension Development H
 the extension loaded. The default build task watches both parts and rebuilds on save; to
 see a change in the Extension Development Host:
 
-- `webview-ui/` (the UI): run **Developer: Reload Webviews**. Give the rebuild a second
-  first; reloading mid-build shows a blank view.
+- `webview-ui/` (the UI): nothing to do. When run from F5, the extension watches
+  `webview-ui/dist` and reloads the sidebar and the Suggested links tab as soon as each
+  rebuild is complete, against your real Dataverse data. The selected environment,
+  solution and filters are kept; the list is fetched again.
 - `src/` (the extension): restart debugging (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>F5</kbd>).
 - `package.json`'s `contributes`: **Developer: Reload Window**, since that's read at
   activation.

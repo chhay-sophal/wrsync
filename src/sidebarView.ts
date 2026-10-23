@@ -1,5 +1,6 @@
 import * as fs from 'node:fs';
 import * as vscode from 'vscode';
+import { onDidRebuildWebview } from './devReload';
 import { watchWorkspaceFiles } from './fileWatcher';
 import { onDidChangeLinks } from './linksStore';
 import { onDidChangeRemoteContent, scheduleModifiedCountRefresh, setBadgeTarget } from './modifiedTracker';
@@ -32,6 +33,10 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
 		const remoteContentSubscription = onDidChangeRemoteContent(() => {
 			webviewView.webview.postMessage({ type: 'recheckModified' });
 		});
+		// F5 only: pick up each new UI build automatically.
+		const devReloadSubscription = onDidRebuildWebview(() => {
+			webviewView.webview.html = getHtml(webviewView.webview, webviewUiDist);
+		});
 
 		webviewView.webview.onDidReceiveMessage((message: { type: string; id?: string; method?: string; params?: unknown }) => {
 			if (message.type === 'rpc') {
@@ -52,6 +57,7 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
 			watcher.dispose();
 			linksSubscription.dispose();
 			remoteContentSubscription.dispose();
+			devReloadSubscription.dispose();
 			setBadgeTarget(undefined);
 		});
 	}

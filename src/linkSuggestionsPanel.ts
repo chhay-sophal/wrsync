@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { onDidRebuildWebview } from './devReload';
 import { dispatchRpc } from './rpc';
 import { getHtml } from './sidebarView';
 
@@ -61,7 +62,12 @@ export function openLinkSuggestionsPanel(data: LinkSuggestionsData): void {
 			dispatchRpc(panel!.webview, message as { type: 'rpc'; id: string; method: string; params?: unknown });
 		}
 	});
+	// F5 only: pick up each new UI build automatically (the reloaded page re-requests its data).
+	const devReloadSubscription = onDidRebuildWebview(() => {
+		if (panel) {panel.webview.html = getHtml(panel.webview, webviewUiDist, 'linkSuggestions');}
+	});
 	panel.onDidDispose(() => {
+		devReloadSubscription.dispose();
 		panel = undefined;
 		currentData = undefined;
 	});

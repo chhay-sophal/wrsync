@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { getAuthStatus, initAuth, login, logout } from './auth';
 import { initCompareProvider } from './compareProvider';
+import { initDevReload } from './devReload';
 import {
 	getWebResourceDetails,
 	listEnvironments,
@@ -15,6 +16,7 @@ import { SidebarViewProvider } from './sidebarView';
 
 export function activate(context: vscode.ExtensionContext) {
 	initAuth(context);
+	initDevReload(context);
 	initLinksStore(context);
 	initCompareProvider(context);
 	initModifiedTracker(context);
