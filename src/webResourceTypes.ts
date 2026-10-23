@@ -80,6 +80,25 @@ export function isImageType(webresourcetype: number): boolean {
 	return [5, 6, 7, 10].includes(webresourcetype);
 }
 
+/** SVG: text (linked, diffed and published like any text type) that also renders as an
+ * image - so it gets Preview Image on top of View Content. */
+export function isSvgType(webresourcetype: number): boolean {
+	return webresourcetype === 11;
+}
+
+const IMAGE_MIME_TYPES: Record<number, string> = {
+	5: 'image/png',
+	6: 'image/jpeg',
+	7: 'image/gif',
+	10: 'image/x-icon',
+	11: 'image/svg+xml',
+};
+
+/** MIME type for types that can be shown as an image (hover thumbnails), else undefined. */
+export function imageMimeType(webresourcetype: number): string | undefined {
+	return IMAGE_MIME_TYPES[webresourcetype];
+}
+
 /** Whether a local file's extension matches the type - false for binary types, and for links
  * made before linking was restricted by type. */
 export function isLinkableFile(webresourcetype: number, localPath: string): boolean {

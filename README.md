@@ -55,7 +55,7 @@ later, use **Pick Solution...** or **Pick Environment...** from the view's **...
 The view lists the solution's web resources, with file icons from your icon theme:
 
 - **Hover** a web resource for its details: display name, type, managed state, linked file,
-  sync status, and who last modified it in Dataverse.
+  sync status, and who last modified it in Dataverse. Images and SVGs also show a thumbnail.
 - **Find**: with the view focused, start typing (or press <kbd>Ctrl</kbd>+<kbd>F</kbd>) to
   find or filter by name — VS Code's built-in tree find.
 - **Filter** (funnel button): by type, by managed state, **Show Modified Only**, **Show
@@ -68,6 +68,9 @@ The view lists the solution's web resources, with file icons from your icon them
   Dataverse content in a read-only tab: text with syntax highlighting, images (PNG, JPG,
   GIF, ICO) in VS Code's image preview. It's what clicking does for anything not linked to a
   local file. (XAP packages can't be previewed.)
+- **SVG** is text, so it links, compares and publishes like JavaScript or CSS. Right-click →
+  **Preview Image** shows the rendered graphic (the Dataverse version); clicking an unlinked
+  or managed SVG does this, and **View Content** shows its XML.
 
 **Managed** web resources (from installed solutions) are read-only here: they can't be
 linked or published, and clicking one shows its content. A link made to one earlier keeps

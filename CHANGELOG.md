@@ -16,6 +16,8 @@ All notable changes to the "wrsync" extension will be documented in this file.
   with syntax highlighting, images in VS Code's image preview; clicking a managed or unlinked
   web resource does this. Managed web resources are read-only - they can't be linked or
   published.
+- SVG web resources get **Preview Image** (the rendered graphic) alongside their XML, and
+  hovering an image or SVG shows a thumbnail.
 - Filters (type, managed state, modified only, linked only, unlinked only) and sort live in the view's title bar and
   are remembered per environment and solution.
 - Publishing asks for confirmation first, naming the target environment, and warns when a

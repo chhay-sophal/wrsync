@@ -22,7 +22,7 @@ import {
 	type SortColumn,
 } from './state';
 import { confirmAndPublish, confirmAndPull, confirmAndUnlink } from './syncActions';
-import { CREATABLE_TYPES, isImageType, isLinkableFile, linkableExtensions, typeLabel } from './webResourceTypes';
+import { CREATABLE_TYPES, isImageType, isLinkableFile, isSvgType, linkableExtensions, typeLabel } from './webResourceTypes';
 import { canSync, type WebResourceNode, type WebResourceTree } from './webResourceTree';
 import { listWorkspaceFiles } from './workspaceFiles';
 
@@ -453,6 +453,22 @@ export function registerWebResourceCommands(context: vscode.ExtensionContext, tr
 			} else {
 				await openRemoteContent(params);
 			}
+		})
+	);
+	register(
+		'wrsync.previewImage',
+		guarded('Preview image', async (node?: WebResourceNode, options?: unknown) => {
+			const target = one(tree, node);
+			const type = target?.resource.webresourcetype;
+			if (!target || type === undefined || !(isSvgType(type) || isImageType(type))) {return;}
+			// Always the Dataverse version - for a linked SVG, the local file is a click away.
+			await openRemoteMedia({
+				orgApiUrl: requireEnvironment().apiUrl,
+				webresourceId: target.resource.webresourceid,
+				webresourceName: target.resource.name,
+				webresourcetype: type,
+				preserveFocus: preservesFocus(options),
+			});
 		})
 	);
 	register(

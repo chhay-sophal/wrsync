@@ -1,13 +1,15 @@
 import * as vscode from 'vscode';
 import { getAuthStatus } from './auth';
-import { getWebResourceDetails, listWebResourcesForSolution, type WebResource } from './dataverseClient';
+import { getWebResourceContent, getWebResourceDetails, listWebResourcesForSolution, type WebResource } from './dataverseClient';
 import { watchWorkspaceFiles } from './fileWatcher';
 import { listLinks, onDidChangeLinks, type ResourceLink } from './linksStore';
 import { checkLinksModified, onDidChangeRemoteContent } from './modifiedTracker';
 import { filtersActive, getEnvironment, getFilters, getSolution, getSort, onDidChangeState } from './state';
 import {
+	imageMimeType,
 	isImageType,
 	isLinkableFile,
+	isSvgType,
 	isTextType,
 	linkableExtensions,
 	nameWithTypeExtension,
@@ -19,6 +21,12 @@ import type { ItemClickOptions } from './webResourceCommands';
  * icon from the name's extension, and the decoration provider below adds the "M" badge and
  * colour exactly the way Git marks modified files in Explorer. */
 const SCHEME = 'wrsync-webresource';
+
+/** Hover thumbnail: the image as a data URI, or a note when it's too big to embed. */
+type Thumbnail = { mime: string; base64: string } | 'tooLarge';
+/** Embedding is capped so a huge image can't bloat the hover (~375 KB decoded). */
+const MAX_THUMBNAIL_BASE64 = 500_000;
+const THUMBNAIL_HEIGHT = 96;
 
 /** One web resource in the tree, with everything its item, menus and commands need. */
 export interface WebResourceNode {
@@ -58,6 +66,7 @@ function contextValue(node: WebResourceNode): string {
 	if (canSync(node)) {flags.push('syncable');}
 	if (node.mismatched) {flags.push('mismatched');}
 	if (node.viewable) {flags.push('viewable');}
+	if (isSvgType(node.resource.webresourcetype)) {flags.push('svg');}
 	return `;${flags.join(';')};`;
 }
 
@@ -305,6 +314,9 @@ export class WebResourceTree
 			item.command = { command: 'wrsync.compare', title: 'Compare', arguments: [node, click] };
 		} else if (link && !node.mismatched && !resource.ismanaged) {
 			item.command = { command: 'wrsync.openLocalFile', title: 'Open Local File', arguments: [node, click] };
+		} else if (isSvgType(resource.webresourcetype)) {
+			// The rendered graphic is more useful at a glance than its XML (still on right-click).
+			item.command = { command: 'wrsync.previewImage', title: 'Preview Image', arguments: [node, click] };
 		} else {
 			// Text opens read-only, images in the image preview; a XAP explains it can't be shown.
 			item.command = { command: 'wrsync.viewContent', title: 'View Content', arguments: [node, click] };
@@ -318,23 +330,40 @@ export class WebResourceTree
 	async resolveTreeItem(item: vscode.TreeItem, node: WebResourceNode): Promise<vscode.TreeItem> {
 		const environment = getEnvironment();
 		if (!environment) {return item;}
-		try {
-			const details = await getWebResourceDetails(environment.apiUrl, node.resource.webresourceid);
-			const when = details.modifiedon ? new Date(details.modifiedon).toLocaleString() : 'unknown time';
-			item.tooltip = this.tooltip(node, `Last modified in Dataverse by ${details.modifiedbyname ?? 'unknown'}, ${when}`);
-		} catch {
-			// Keep the basic tooltip.
-		}
+		const { webresourceid, webresourcetype } = node.resource;
+		const mime = imageMimeType(webresourcetype);
+		// Details and (for images/SVG) the thumbnail are fetched together, only for the hovered
+		// item. A failed thumbnail just leaves it out.
+		const [details, thumbnail] = await Promise.all([
+			getWebResourceDetails(environment.apiUrl, webresourceid).catch(() => undefined),
+			mime
+				? getWebResourceContent(environment.apiUrl, webresourceid)
+						.then((base64): Thumbnail => (base64.length <= MAX_THUMBNAIL_BASE64 ? { mime, base64 } : 'tooLarge'))
+						.catch(() => undefined)
+				: Promise.resolve(undefined),
+		]);
+		const lastModified = details
+			? `Last modified in Dataverse by ${details.modifiedbyname ?? 'unknown'}, ${details.modifiedon ? new Date(details.modifiedon).toLocaleString() : 'unknown time'}`
+			: undefined;
+		item.tooltip = this.tooltip(node, lastModified, thumbnail);
 		return item;
 	}
 
-	private tooltip(node: WebResourceNode, extraLine?: string): vscode.MarkdownString {
+	private tooltip(node: WebResourceNode, extraLine?: string, thumbnail?: Thumbnail): vscode.MarkdownString {
 		const { resource, link } = node;
+		// What clicking an unlinked/managed item does - SVG previews the image, text shows source.
+		const clickHint = isSvgType(resource.webresourcetype) ? 'Click to preview it.' : 'Click to view its content.';
 		const md = new vscode.MarkdownString(undefined, true);
 		md.appendMarkdown(`**${escapeMd(resource.name)}**\n\n`);
+		if (thumbnail === 'tooLarge') {
+			md.appendMarkdown('$(file-media) Too large for a thumbnail - click to preview.\n\n');
+		} else if (thumbnail) {
+			// A data URI, so no file is needed; "|height=" is VS Code's markdown image sizing.
+			md.appendMarkdown(`![${escapeMd(resource.name)}](data:${thumbnail.mime};base64,${thumbnail.base64}|height=${THUMBNAIL_HEIGHT})\n\n`);
+		}
 		md.appendMarkdown(`${escapeMd(resource.displayname)} · ${typeLabel(resource.webresourcetype)} · ${resource.ismanaged ? 'Managed' : 'Unmanaged'}\n\n`);
 		if (resource.ismanaged) {
-			md.appendMarkdown('$(lock) Managed: read-only here. Click to view its content.\n\n');
+			md.appendMarkdown(`$(lock) Managed: read-only here. ${clickHint}\n\n`);
 			if (link) {
 				md.appendMarkdown(`$(link) Still linked to \`${escapeMd(link.localPath)}\` - unlink it to tidy up.\n\n`);
 			}
@@ -350,7 +379,7 @@ export class WebResourceTree
 		} else {
 			md.appendMarkdown(
 				node.linkable
-					? 'Not linked to a local file. Click to view its content.\n\n'
+					? `Not linked to a local file. ${clickHint}\n\n`
 					: `${typeLabel(resource.webresourcetype)}: linking not supported.${node.viewable ? ' Click to preview.' : ''}\n\n`
 			);
 		}
