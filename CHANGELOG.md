@@ -12,6 +12,8 @@ All notable changes to the "wrsync" extension will be documented in this file.
 - Unlinking a local file now asks for confirmation first.
 - The web resource details dialog now shows who last modified the resource in Dataverse.
 - Switching away from the wrsync sidebar and back no longer reloads the web resource list.
+- Line-ending (CRLF vs LF) and UTF-8 BOM differences no longer mark a linked file as
+  modified, and the Activity Bar badge count now agrees with the cards on BOM files.
 
 ## [0.0.2]
 

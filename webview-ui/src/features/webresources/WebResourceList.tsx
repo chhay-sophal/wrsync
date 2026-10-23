@@ -18,6 +18,7 @@ import {
 import { getLocalFileContent, listLinks, type LocalFile, type ResourceLink } from "../../api/local";
 import { usePersistedState } from "../../hooks/usePersistedState";
 import { base64ToUtf8, utf8ToBase64 } from "../../lib/base64";
+import { normalizeForCompare } from "../../lib/text";
 import { ConfirmPublishDialog } from "./ConfirmPublishDialog";
 import { CreateWebResourceDialog } from "./CreateWebResourceDialog";
 import {
@@ -112,7 +113,7 @@ export function WebResourceList({
           getLocalFileContent(link.localPath),
           getWebResourceContent(orgApiUrl, link.webresourceId),
         ]);
-        const modified = localContent !== base64ToUtf8(remoteBase64);
+        const modified = normalizeForCompare(localContent) !== normalizeForCompare(base64ToUtf8(remoteBase64));
         setModifiedStatus((prev) => new Map(prev).set(link.webresourceId, modified));
       } catch {
         // Transient fetch error — leave the previous known state alone rather than guess.

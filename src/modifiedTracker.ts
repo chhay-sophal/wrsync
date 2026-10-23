@@ -96,10 +96,19 @@ async function isLinkModified(
 		if (remoteBase64 === null) {return null;}
 		const localText = Buffer.from(localBytes).toString('utf-8');
 		const remoteText = Buffer.from(remoteBase64, 'base64').toString('utf-8');
-		return localText !== remoteText;
+		return normalizeForCompare(localText) !== normalizeForCompare(remoteText);
 	} catch {
 		return null;
 	}
+}
+
+/** Ignores CRLF vs LF line endings and a leading UTF-8 BOM when comparing, so a Windows
+ * checkout (core.autocrlf) of content saved elsewhere with LF isn't counted as modified.
+ * Keep in sync with normalizeForCompare in webview-ui/src/lib/text.ts, which drives the
+ * cards' Modified state - the badge count must agree with it. */
+function normalizeForCompare(text: string): string {
+	const withoutBom = text.charCodeAt(0) === 0xfeff ? text.slice(1) : text;
+	return withoutBom.replace(/\r\n?/g, '\n');
 }
 
 async function refreshModifiedCount(): Promise<void> {
