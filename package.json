@@ -31,28 +31,135 @@
     "commands": [
       {
         "command": "wrsync.signIn",
-        "title": "Web Resource Sync: Sign In"
+        "title": "Sign In",
+        "category": "Web Resource Sync",
+        "icon": "$(sign-in)"
+      },
+      {
+        "command": "wrsync.signInToTenant",
+        "title": "Sign In to Another Tenant...",
+        "category": "Web Resource Sync"
       },
       {
         "command": "wrsync.signOut",
-        "title": "Web Resource Sync: Sign Out"
+        "title": "Sign Out",
+        "category": "Web Resource Sync",
+        "icon": "$(sign-out)"
       },
       {
         "command": "wrsync.showAuthStatus",
-        "title": "Web Resource Sync: Show Sign-in Status"
+        "title": "Show Sign-in Status",
+        "category": "Web Resource Sync"
       },
       {
         "command": "wrsync.pickEnvironment",
-        "title": "Web Resource Sync: Pick Environment"
+        "title": "Pick Environment...",
+        "category": "Web Resource Sync",
+        "icon": "$(cloud)"
       },
       {
-        "command": "wrsync.browseWebResources",
-        "title": "Web Resource Sync: Browse Web Resources"
+        "command": "wrsync.pickSolution",
+        "title": "Pick Solution...",
+        "category": "Web Resource Sync",
+        "icon": "$(package)"
+      },
+      {
+        "command": "wrsync.refresh",
+        "title": "Refresh",
+        "category": "Web Resource Sync",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "wrsync.createWebResource",
+        "title": "Create Web Resource...",
+        "category": "Web Resource Sync",
+        "icon": "$(new-file)"
+      },
+      {
+        "command": "wrsync.suggestLinks",
+        "title": "Suggest Links...",
+        "category": "Web Resource Sync",
+        "icon": "$(sparkle)"
+      },
+      {
+        "command": "wrsync.filterTypes",
+        "title": "Filter by Type...",
+        "category": "Web Resource Sync"
+      },
+      {
+        "command": "wrsync.filterManaged",
+        "title": "Filter by Managed State...",
+        "category": "Web Resource Sync"
+      },
+      {
+        "command": "wrsync.showModifiedOnly",
+        "title": "Show Modified Only",
+        "category": "Web Resource Sync"
+      },
+      {
+        "command": "wrsync.showAllNotOnlyModified",
+        "title": "Show Modified Only ✓",
+        "category": "Web Resource Sync"
+      },
+      {
+        "command": "wrsync.clearFilters",
+        "title": "Clear Filters",
+        "category": "Web Resource Sync",
+        "icon": "$(clear-all)"
+      },
+      {
+        "command": "wrsync.sortBy",
+        "title": "Sort By...",
+        "category": "Web Resource Sync",
+        "icon": "$(list-ordered)"
+      },
+      {
+        "command": "wrsync.link",
+        "title": "Link to Local File...",
+        "category": "Web Resource Sync",
+        "icon": "$(link)"
+      },
+      {
+        "command": "wrsync.unlink",
+        "title": "Unlink Local File",
+        "category": "Web Resource Sync",
+        "icon": "$(debug-disconnect)"
+      },
+      {
+        "command": "wrsync.publish",
+        "title": "Publish",
+        "category": "Web Resource Sync",
+        "icon": "$(cloud-upload)"
+      },
+      {
+        "command": "wrsync.pull",
+        "title": "Pull (Replace Local File)",
+        "category": "Web Resource Sync",
+        "icon": "$(cloud-download)"
+      },
+      {
+        "command": "wrsync.compare",
+        "title": "Compare with Local File",
+        "category": "Web Resource Sync",
+        "icon": "$(diff)"
+      },
+      {
+        "command": "wrsync.openLocalFile",
+        "title": "Open Local File",
+        "category": "Web Resource Sync",
+        "icon": "$(go-to-file)"
+      },
+      {
+        "command": "wrsync.showDetails",
+        "title": "Show Details",
+        "category": "Web Resource Sync",
+        "icon": "$(info)"
       },
       {
         "command": "wrsync.publishCurrentFile",
-        "title": "Web Resource Sync: Publish This File",
-        "icon": "$(cloud-upload)"
+        "title": "Publish This File",
+        "icon": "$(cloud-upload)",
+        "category": "Web Resource Sync"
       }
     ],
     "viewsContainers": {
@@ -67,9 +174,10 @@
     "views": {
       "wrsync": [
         {
-          "id": "wrsync.sidebar",
-          "name": "Web Resource Sync",
-          "type": "webview"
+          "id": "wrsync.webResources",
+          "name": "Web Resources",
+          "contextualTitle": "Web Resource Sync",
+          "icon": "media/icon.svg"
         }
       ]
     },
@@ -81,10 +189,253 @@
           "group": "navigation"
         }
       ],
+      "wrsync.filter": [
+        {
+          "command": "wrsync.filterTypes",
+          "group": "1_filter@1"
+        },
+        {
+          "command": "wrsync.filterManaged",
+          "group": "1_filter@2"
+        },
+        {
+          "command": "wrsync.showModifiedOnly",
+          "group": "1_filter@3",
+          "when": "!wrsync.modifiedOnly"
+        },
+        {
+          "command": "wrsync.showAllNotOnlyModified",
+          "group": "1_filter@3",
+          "when": "wrsync.modifiedOnly"
+        },
+        {
+          "command": "wrsync.clearFilters",
+          "group": "2_clear",
+          "when": "wrsync.filtersActive"
+        }
+      ],
+      "wrsync.filterActive": [
+        {
+          "command": "wrsync.filterTypes",
+          "group": "1_filter@1"
+        },
+        {
+          "command": "wrsync.filterManaged",
+          "group": "1_filter@2"
+        },
+        {
+          "command": "wrsync.showModifiedOnly",
+          "group": "1_filter@3",
+          "when": "!wrsync.modifiedOnly"
+        },
+        {
+          "command": "wrsync.showAllNotOnlyModified",
+          "group": "1_filter@3",
+          "when": "wrsync.modifiedOnly"
+        },
+        {
+          "command": "wrsync.clearFilters",
+          "group": "2_clear",
+          "when": "wrsync.filtersActive"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "wrsync.createWebResource",
+          "when": "view == wrsync.webResources && wrsync.signedIn && wrsync.hasSolution",
+          "group": "navigation@1"
+        },
+        {
+          "command": "wrsync.suggestLinks",
+          "when": "view == wrsync.webResources && wrsync.signedIn && wrsync.hasSolution",
+          "group": "navigation@2"
+        },
+        {
+          "command": "wrsync.refresh",
+          "when": "view == wrsync.webResources && wrsync.signedIn && wrsync.hasSolution",
+          "group": "navigation@3"
+        },
+        {
+          "submenu": "wrsync.filter",
+          "when": "view == wrsync.webResources && wrsync.signedIn && wrsync.hasSolution && !wrsync.filtersActive",
+          "group": "navigation@4"
+        },
+        {
+          "submenu": "wrsync.filterActive",
+          "when": "view == wrsync.webResources && wrsync.signedIn && wrsync.hasSolution && wrsync.filtersActive",
+          "group": "navigation@4"
+        },
+        {
+          "command": "wrsync.sortBy",
+          "when": "view == wrsync.webResources && wrsync.signedIn && wrsync.hasSolution",
+          "group": "1_view@1"
+        },
+        {
+          "command": "wrsync.clearFilters",
+          "when": "view == wrsync.webResources && wrsync.signedIn && wrsync.hasSolution && wrsync.filtersActive",
+          "group": "1_view@2"
+        },
+        {
+          "command": "wrsync.pickSolution",
+          "when": "view == wrsync.webResources && wrsync.signedIn && wrsync.hasEnvironment",
+          "group": "2_context@1"
+        },
+        {
+          "command": "wrsync.pickEnvironment",
+          "when": "view == wrsync.webResources && wrsync.signedIn",
+          "group": "2_context@2"
+        },
+        {
+          "command": "wrsync.signOut",
+          "when": "view == wrsync.webResources && wrsync.signedIn",
+          "group": "3_account@1"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "wrsync.link",
+          "when": "view == wrsync.webResources && viewItem =~ /;linkable;/",
+          "group": "inline@1"
+        },
+        {
+          "command": "wrsync.publish",
+          "when": "view == wrsync.webResources && viewItem =~ /;syncable;/",
+          "group": "inline@2"
+        },
+        {
+          "command": "wrsync.pull",
+          "when": "view == wrsync.webResources && viewItem =~ /;syncable;/",
+          "group": "inline@3"
+        },
+        {
+          "command": "wrsync.unlink",
+          "when": "view == wrsync.webResources && viewItem =~ /;linked;/",
+          "group": "inline@4"
+        },
+        {
+          "command": "wrsync.compare",
+          "when": "view == wrsync.webResources && viewItem =~ /;syncable;/",
+          "group": "1_sync@1"
+        },
+        {
+          "command": "wrsync.publish",
+          "when": "view == wrsync.webResources && viewItem =~ /;syncable;/",
+          "group": "1_sync@2"
+        },
+        {
+          "command": "wrsync.pull",
+          "when": "view == wrsync.webResources && viewItem =~ /;syncable;/",
+          "group": "1_sync@3"
+        },
+        {
+          "command": "wrsync.openLocalFile",
+          "when": "view == wrsync.webResources && viewItem =~ /;linked;/",
+          "group": "2_link@1"
+        },
+        {
+          "command": "wrsync.link",
+          "when": "view == wrsync.webResources && viewItem =~ /;linkable;/",
+          "group": "2_link@2"
+        },
+        {
+          "command": "wrsync.unlink",
+          "when": "view == wrsync.webResources && viewItem =~ /;linked;/",
+          "group": "2_link@3"
+        },
+        {
+          "command": "wrsync.showDetails",
+          "when": "view == wrsync.webResources && viewItem =~ /;webresource;/",
+          "group": "3_info@1"
+        }
+      ],
       "commandPalette": [
+        {
+          "command": "wrsync.link",
+          "when": "false"
+        },
+        {
+          "command": "wrsync.unlink",
+          "when": "false"
+        },
+        {
+          "command": "wrsync.pull",
+          "when": "false"
+        },
+        {
+          "command": "wrsync.compare",
+          "when": "false"
+        },
+        {
+          "command": "wrsync.openLocalFile",
+          "when": "false"
+        },
+        {
+          "command": "wrsync.showDetails",
+          "when": "false"
+        },
+        {
+          "command": "wrsync.showAllNotOnlyModified",
+          "when": "false"
+        },
+        {
+          "command": "wrsync.publish",
+          "when": "focusedView == wrsync.webResources"
+        },
         {
           "command": "wrsync.publishCurrentFile",
           "when": "wrsync.activeFileLinked"
+        },
+        {
+          "command": "wrsync.refresh",
+          "when": "wrsync.signedIn && wrsync.hasSolution"
+        },
+        {
+          "command": "wrsync.createWebResource",
+          "when": "wrsync.signedIn && wrsync.hasSolution"
+        },
+        {
+          "command": "wrsync.suggestLinks",
+          "when": "wrsync.signedIn && wrsync.hasSolution"
+        },
+        {
+          "command": "wrsync.filterTypes",
+          "when": "wrsync.signedIn && wrsync.hasSolution"
+        },
+        {
+          "command": "wrsync.filterManaged",
+          "when": "wrsync.signedIn && wrsync.hasSolution"
+        },
+        {
+          "command": "wrsync.showModifiedOnly",
+          "when": "wrsync.signedIn && wrsync.hasSolution"
+        },
+        {
+          "command": "wrsync.clearFilters",
+          "when": "wrsync.signedIn && wrsync.hasSolution"
+        },
+        {
+          "command": "wrsync.sortBy",
+          "when": "wrsync.signedIn && wrsync.hasSolution"
+        },
+        {
+          "command": "wrsync.pickSolution",
+          "when": "wrsync.signedIn"
+        },
+        {
+          "command": "wrsync.pickEnvironment",
+          "when": "wrsync.signedIn"
+        },
+        {
+          "command": "wrsync.signOut",
+          "when": "wrsync.signedIn"
+        },
+        {
+          "command": "wrsync.signIn",
+          "when": "!wrsync.signedIn"
+        },
+        {
+          "command": "wrsync.signInToTenant",
+          "when": "!wrsync.signedIn"
         }
       ]
     },
@@ -94,6 +445,35 @@
         "key": "ctrl+alt+u",
         "mac": "cmd+alt+u",
         "when": "editorTextFocus && wrsync.activeFileLinked"
+      }
+    ],
+    "viewsWelcome": [
+      {
+        "view": "wrsync.webResources",
+        "when": "!wrsync.signedIn",
+        "contents": "Sign in with your Microsoft account to browse and sync Dataverse web resources.\n[Sign In](command:wrsync.signIn)\nEnvironment in another organization? [Sign in to another tenant](command:wrsync.signInToTenant)."
+      },
+      {
+        "view": "wrsync.webResources",
+        "when": "wrsync.signedIn && !wrsync.hasEnvironment",
+        "contents": "Pick the Dataverse environment to work with.\n[Pick Environment](command:wrsync.pickEnvironment)"
+      },
+      {
+        "view": "wrsync.webResources",
+        "when": "wrsync.signedIn && wrsync.hasEnvironment && !wrsync.hasSolution",
+        "contents": "Pick the solution whose web resources you want to sync.\n[Pick Solution](command:wrsync.pickSolution)\n[Change Environment](command:wrsync.pickEnvironment)"
+      }
+    ],
+    "submenus": [
+      {
+        "id": "wrsync.filter",
+        "label": "Filter",
+        "icon": "$(filter)"
+      },
+      {
+        "id": "wrsync.filterActive",
+        "label": "Filter (active)",
+        "icon": "$(filter-filled)"
       }
     ]
   },

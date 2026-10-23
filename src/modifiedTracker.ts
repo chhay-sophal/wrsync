@@ -6,11 +6,14 @@ import { listLinks, type ResourceLink } from './linksStore';
 
 const DEBOUNCE_MS = 500;
 
-let currentWebviewView: vscode.WebviewView | undefined;
+/** Anything with a view badge - the "Web Resources" tree view. */
+type BadgeTarget = { badge?: vscode.ViewBadge };
+
+let badgeTarget: BadgeTarget | undefined;
 
 const remoteContentChanged = new vscode.EventEmitter<void>();
-/** Fires when web resource content was changed in Dataverse from outside the sidebar (e.g.
- * "Publish This File" in the editor), so the sidebar re-checks its cards' Modified state. */
+/** Fires after web resource content was changed in Dataverse by this extension (a publish), so
+ * the tree re-checks its Modified state. */
 export const onDidChangeRemoteContent = remoteContentChanged.event;
 
 export function notifyRemoteContentChanged(): void {
@@ -18,10 +21,10 @@ export function notifyRemoteContentChanged(): void {
 }
 let debounceTimer: ReturnType<typeof setTimeout> | undefined;
 
-/** Sets which webview view's Activity Bar badge reflects the modified-file count. Called
- * whenever the sidebar view is (re)resolved, and cleared when it's disposed. */
-export function setBadgeTarget(webviewView: vscode.WebviewView | undefined): void {
-	currentWebviewView = webviewView;
+/** Sets which view's badge (shown on the Activity Bar icon) reflects the modified-file count. */
+export function setBadgeTarget(target: BadgeTarget | undefined): void {
+	badgeTarget = target;
+	scheduleModifiedCountRefresh();
 }
 
 /** Debounced trigger for a full recompute — coalesces bursts of file-save events and rapid
@@ -69,8 +72,8 @@ async function listEnvironmentApiUrlsSilent(): Promise<Map<string, string> | nul
 }
 
 /** Compares each link's local file with its content in one Dataverse environment, fetching
- * all the contents in batched requests rather than one per link. Used for both the cards'
- * Modified state (via RPC) and the Activity Bar badge, so the two always agree. Links whose
+ * all the contents in batched requests rather than one per link. Used for both the tree's
+ * Modified state and the Activity Bar badge, so the two always agree. Links whose
  * local file or Dataverse content can't be read right now are left out of the result rather
  * than guessed. Throws only if the Dataverse request itself fails. */
 export async function checkLinksModified(
@@ -152,6 +155,6 @@ async function refreshModifiedCount(): Promise<void> {
 }
 
 function setBadge(count: number): void {
-	if (!currentWebviewView) {return;}
-	currentWebviewView.badge = count > 0 ? { value: count, tooltip: `${count} modified web resource(s)` } : undefined;
+	if (!badgeTarget) {return;}
+	badgeTarget.badge = count > 0 ? { value: count, tooltip: `${count} modified web resource(s)` } : undefined;
 }

@@ -4,41 +4,40 @@ All notable changes to the "wrsync" extension will be documented in this file.
 
 ## [Unreleased]
 
-- Publishing now asks for confirmation first, listing the resources and the target
-  environment host before anything is overwritten.
-- The publish confirmation warns when a resource was last changed in Dataverse by someone
-  else (with who and how long ago), so you don't silently overwrite a colleague's change.
-- Added **Pull** on modified cards: replaces the linked local file with the current
-  Dataverse content in one step (after a confirmation). Open editors update in place, the
-  file keeps its line endings, and files with unsaved changes are left alone.
-- Added **Suggest links** to the toolbar: opens an editor tab proposing local files for
-  unlinked web resources by matching names, confirms candidates by comparing content, and
-  links the rows you tick in one go. Ambiguous and name-only matches start unticked. The
-  sidebar picks up links made there (or anywhere else) immediately.
+- **The sidebar is now a native VS Code tree view** ("Web Resources") instead of a webview,
+  so it behaves like Explorer: file icons from your icon theme, hovers that can extend past
+  the sidebar, Explorer-style multi-selection and keyboard navigation, inline action
+  buttons, right-click menus, built-in find, and welcome steps for signing in and picking an
+  environment and solution.
+- Modified web resources are marked **M** in the modified colour (like changed files in
+  Explorer), and clicking one opens Compare; clicking an in-sync linked one opens its local
+  file. Hovering shows details, including who last modified it in Dataverse.
+- Filters (type, managed state, modified only) and sort live in the view's title bar and
+  are remembered per environment and solution.
+- Publishing asks for confirmation first, naming the target environment, and warns when a
+  resource was last changed in Dataverse by someone else (with who and when), so you don't
+  silently overwrite a colleague's change. Select several resources to publish them together.
+- Added **Pull**: replaces the linked local file with the current Dataverse content in one
+  step (after a confirmation). Open editors update in place, the file keeps its line
+  endings, and files with unsaved changes are left alone.
+- Added **Suggest Links**: opens an editor tab proposing local files for unlinked web
+  resources by matching names, confirms candidates by comparing content, and links the rows
+  you tick in one go. Ambiguous and name-only matches start unticked.
 - Added **Publish This File**: publish a linked file straight from the editor via its
   title-bar button, <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>U</kbd>, or the Command Palette. It
-  saves first, confirms (with the changed-by-someone-else warning), and the sidebar's
-  Modified state updates afterwards. The extension now activates on startup so the button
-  is available before the sidebar is opened.
-- An unexpected error in the sidebar or the Suggested links tab now shows a recovery screen
-  (Try again / Reload / Reset & reload, plus error details) instead of a blank view.
-- Faster modified-check for large solutions: linked resources' Dataverse content is now
-  fetched in batched requests (up to 50 per request) instead of one request per resource,
-  for both the cards and the Activity Bar badge, which now share a single comparison.
-- Toolbar and card actions are now icon-only buttons with tooltips that appear on hover
-  and keyboard focus and are read by screen readers; disabled buttons still show theirs.
-  The toolbar publish button shows the number of selected resources.
-- Removed the **Publish All** and **Clear filters** toolbar buttons; select cards and use
-  the toolbar's publish button instead.
+  saves first and confirms like publishing from the view. The extension now activates on
+  startup so the button is available before the view is opened.
 - Unlinking a local file now asks for confirmation first.
-- The web resource details dialog now shows who last modified the resource in Dataverse.
-- Switching away from the wrsync sidebar and back no longer reloads the web resource list.
-- Line-ending (CRLF vs LF) and UTF-8 BOM differences no longer mark a linked file as
-  modified, and the Activity Bar badge count now agrees with the cards on BOM files.
-- The "Link a file" picker now only offers files matching the web resource's type (e.g.
-  `.js` for JavaScript). Binary types (PNG, JPG, GIF, ICO) show "linking not supported",
-  and existing links with a mismatched file type are flagged and can't be published.
+- Linking only offers files matching the web resource's type (e.g. `.js` for JavaScript).
+  Binary types (PNG, JPG, GIF, ICO) can't be linked, and existing links with a mismatched
+  file type are flagged and can't be published.
 - XSL web resources can now be linked to local `.xsl` / `.xslt` files.
+- Line-ending (CRLF vs LF) and UTF-8 BOM differences no longer mark a linked file as
+  modified.
+- Faster change detection for large solutions: linked resources' Dataverse content is
+  fetched in batched requests (up to 50 per request) instead of one request per resource.
+- An unexpected error in the Suggested links tab shows a recovery screen (Try again /
+  Reload / Reset & reload, plus error details) instead of a blank view.
 
 ## [0.0.2]
 

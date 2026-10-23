@@ -1,10 +1,10 @@
 import * as vscode from 'vscode';
 import { onDidRebuildWebview } from './devReload';
 import { dispatchRpc } from './rpc';
-import { getHtml } from './sidebarView';
+import { getHtml } from './webviewHtml';
 
-/** Everything the "Suggested links" page needs, gathered by the sidebar (which already has
- * the solution's resources, links and workspace files loaded). */
+/** Everything the "Suggested links" page needs, gathered by the Web Resources tree (which
+ * already has the solution's resources and links loaded). */
 export interface LinkSuggestionsData {
 	orgApiUrl: string;
 	environmentId: string;
