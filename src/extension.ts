@@ -4,6 +4,7 @@ import { initCompareProvider } from './compareProvider';
 import { initDevReload } from './devReload';
 import { initLinkSuggestionsPanel } from './linkSuggestionsPanel';
 import { initLinksStore } from './linksStore';
+import { initMediaProvider } from './mediaProvider';
 import { initModifiedTracker, setBadgeTarget } from './modifiedTracker';
 import { initPublishCurrentFile } from './publishCurrentFile';
 import { initState } from './state';
@@ -16,6 +17,7 @@ export function activate(context: vscode.ExtensionContext) {
 	initLinksStore(context);
 	initState(context);
 	initCompareProvider(context);
+	initMediaProvider(context);
 	initModifiedTracker(context);
 	initLinkSuggestionsPanel(context);
 	initPublishCurrentFile(context);

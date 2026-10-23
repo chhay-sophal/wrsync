@@ -3,6 +3,7 @@ import { getAuthStatus, login, logout } from './auth';
 import { openCompareDiff, openRemoteContent } from './compareProvider';
 import { createWebResource, getWebResourceDetails, listEnvironments, listSolutions } from './dataverseClient';
 import { openLinkSuggestionsPanel } from './linkSuggestionsPanel';
+import { openRemoteMedia } from './mediaProvider';
 import { createLink, listLinks } from './linksStore';
 import { scheduleModifiedCountRefresh } from './modifiedTracker';
 import {
@@ -21,7 +22,7 @@ import {
 	type SortColumn,
 } from './state';
 import { confirmAndPublish, confirmAndPull, confirmAndUnlink } from './syncActions';
-import { CREATABLE_TYPES, isLinkableFile, linkableExtensions, typeLabel } from './webResourceTypes';
+import { CREATABLE_TYPES, isImageType, isLinkableFile, linkableExtensions, typeLabel } from './webResourceTypes';
 import { canSync, type WebResourceNode, type WebResourceTree } from './webResourceTree';
 import { listWorkspaceFiles } from './workspaceFiles';
 
@@ -434,16 +435,24 @@ export function registerWebResourceCommands(context: vscode.ExtensionContext, tr
 			const target = one(tree, node);
 			if (!target) {return;}
 			if (!target.viewable) {
-				vscode.window.showInformationMessage(`${typeLabel(target.resource.webresourcetype)} content can't be shown as text.`);
+				vscode.window.showInformationMessage(
+					`${target.resource.name} is a ${typeLabel(target.resource.webresourcetype)} package, which can't be previewed.`
+				);
 				return;
 			}
-			await openRemoteContent({
+			const params = {
 				orgApiUrl: requireEnvironment().apiUrl,
 				webresourceId: target.resource.webresourceid,
 				webresourceName: target.resource.name,
 				webresourcetype: target.resource.webresourcetype,
 				preserveFocus: preservesFocus(options),
-			});
+			};
+			// Images go to VS Code's image preview; everything else viewable is text.
+			if (isImageType(target.resource.webresourcetype)) {
+				await openRemoteMedia(params);
+			} else {
+				await openRemoteContent(params);
+			}
 		})
 	);
 	register(

@@ -12,9 +12,10 @@ All notable changes to the "wrsync" extension will be documented in this file.
 - Modified web resources are marked **M** in the modified colour (like changed files in
   Explorer), and clicking one opens Compare; clicking an in-sync linked one opens its local
   file. Hovering shows details, including who last modified it in Dataverse.
-- Added **View Content**: opens a web resource's Dataverse content in a read-only tab with
-  syntax highlighting; clicking a managed or unlinked web resource does this. Managed web
-  resources are read-only - they can't be linked or published.
+- Added **View Content**: opens a web resource's Dataverse content in a read-only tab - text
+  with syntax highlighting, images in VS Code's image preview; clicking a managed or unlinked
+  web resource does this. Managed web resources are read-only - they can't be linked or
+  published.
 - Filters (type, managed state, modified only, linked only, unlinked only) and sort live in the view's title bar and
   are remembered per environment and solution.
 - Publishing asks for confirmation first, naming the target environment, and warns when a

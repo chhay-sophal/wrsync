@@ -65,8 +65,9 @@ The view lists the solution's web resources, with file icons from your icon them
 - **Show Details** (right-click) adds the description, dates, and ID, with buttons to
   copy the name or ID.
 - **View Content** (click, or right-click → **View Content**) opens a web resource's current
-  Dataverse content in a read-only tab, with syntax highlighting. It's what clicking does for
-  anything not linked to a local file.
+  Dataverse content in a read-only tab: text with syntax highlighting, images (PNG, JPG,
+  GIF, ICO) in VS Code's image preview. It's what clicking does for anything not linked to a
+  local file. (XAP packages can't be previewed.)
 
 **Managed** web resources (from installed solutions) are read-only here: they can't be
 linked or published, and clicking one shows its content. A link made to one earlier keeps

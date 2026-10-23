@@ -5,7 +5,14 @@ import { watchWorkspaceFiles } from './fileWatcher';
 import { listLinks, onDidChangeLinks, type ResourceLink } from './linksStore';
 import { checkLinksModified, onDidChangeRemoteContent } from './modifiedTracker';
 import { filtersActive, getEnvironment, getFilters, getSolution, getSort, onDidChangeState } from './state';
-import { isLinkableFile, isTextType, linkableExtensions, nameWithTypeExtension, typeLabel } from './webResourceTypes';
+import {
+	isImageType,
+	isLinkableFile,
+	isTextType,
+	linkableExtensions,
+	nameWithTypeExtension,
+	typeLabel,
+} from './webResourceTypes';
 import type { ItemClickOptions } from './webResourceCommands';
 
 /** Gives each tree item a resourceUri so VS Code treats it like a file: the icon theme picks an
@@ -24,7 +31,8 @@ export interface WebResourceNode {
 	/** Can be linked to a local file: an unmanaged resource of a text type. Managed resources
 	 * come from installed solutions and are read-only here - view their content instead. */
 	linkable: boolean;
-	/** Text content that View Content can show (false for binary types like images). */
+	/** View Content can show it: text in a read-only editor, images in the image preview
+	 * (false only for XAP packages). */
 	viewable: boolean;
 }
 
@@ -199,7 +207,7 @@ export class WebResourceTree
 				modified: link !== undefined && !resource.ismanaged && this.modified.get(resource.webresourceid) === true,
 				mismatched: link !== undefined && !isLinkableFile(resource.webresourcetype, link.localPath),
 				linkable: !resource.ismanaged && linkableExtensions(resource.webresourcetype) !== null,
-				viewable: isTextType(resource.webresourcetype),
+				viewable: isTextType(resource.webresourcetype) || isImageType(resource.webresourcetype),
 			});
 		}
 
@@ -297,7 +305,8 @@ export class WebResourceTree
 			item.command = { command: 'wrsync.compare', title: 'Compare', arguments: [node, click] };
 		} else if (link && !node.mismatched && !resource.ismanaged) {
 			item.command = { command: 'wrsync.openLocalFile', title: 'Open Local File', arguments: [node, click] };
-		} else if (node.viewable) {
+		} else {
+			// Text opens read-only, images in the image preview; a XAP explains it can't be shown.
 			item.command = { command: 'wrsync.viewContent', title: 'View Content', arguments: [node, click] };
 		}
 		item.tooltip = this.tooltip(node);
@@ -342,7 +351,7 @@ export class WebResourceTree
 			md.appendMarkdown(
 				node.linkable
 					? 'Not linked to a local file. Click to view its content.\n\n'
-					: `${typeLabel(resource.webresourcetype)}: linking not supported.\n\n`
+					: `${typeLabel(resource.webresourcetype)}: linking not supported.${node.viewable ? ' Click to preview.' : ''}\n\n`
 			);
 		}
 		if (extraLine) {md.appendMarkdown(escapeMd(extraLine));}

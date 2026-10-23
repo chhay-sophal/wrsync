@@ -74,6 +74,12 @@ export function isTextType(webresourcetype: number): boolean {
 	return LINKABLE_EXTENSIONS[webresourcetype] !== undefined;
 }
 
+/** Image types, which open in VS Code's image preview (View Content). XAP, the other binary
+ * type, is a zip package with nothing to preview. */
+export function isImageType(webresourcetype: number): boolean {
+	return [5, 6, 7, 10].includes(webresourcetype);
+}
+
 /** Whether a local file's extension matches the type - false for binary types, and for links
  * made before linking was restricted by type. */
 export function isLinkableFile(webresourcetype: number, localPath: string): boolean {
