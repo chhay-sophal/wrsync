@@ -5,7 +5,7 @@ import { watchWorkspaceFiles } from './fileWatcher';
 import { listLinks, onDidChangeLinks, type ResourceLink } from './linksStore';
 import { checkLinksModified, onDidChangeRemoteContent } from './modifiedTracker';
 import { filtersActive, getEnvironment, getFilters, getSolution, getSort, onDidChangeState } from './state';
-import { isLinkableFile, linkableExtensions, typeLabel } from './webResourceTypes';
+import { isLinkableFile, linkableExtensions, nameWithTypeExtension, typeLabel } from './webResourceTypes';
 import type { ItemClickOptions } from './webResourceCommands';
 
 /** Gives each tree item a resourceUri so VS Code treats it like a file: the icon theme picks an
@@ -30,8 +30,13 @@ export function canSync(node: WebResourceNode): boolean {
 	return node.link !== undefined && node.modified && !node.mismatched;
 }
 
+/** The item's identity for icons and decorations. The path ends in the type's extension even
+ * when the name has none (e.g. "sync_Lookup" -> "/sync_Lookup.js"), because icon themes pick
+ * icons by extension; the label shown is set separately, and decorations look items up by the
+ * id in the query. */
 function resourceUri(resource: WebResource): vscode.Uri {
-	return vscode.Uri.from({ scheme: SCHEME, path: `/${resource.name}`, query: resource.webresourceid });
+	const path = `/${nameWithTypeExtension(resource.name, resource.webresourcetype)}`;
+	return vscode.Uri.from({ scheme: SCHEME, path, query: resource.webresourceid });
 }
 
 /** Item state for package.json menu `when` clauses (`viewItem =~ /;modified;/` etc.). */

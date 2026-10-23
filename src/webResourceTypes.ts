@@ -30,6 +30,29 @@ const LINKABLE_EXTENSIONS: Record<number, string[]> = {
 	12: ['resx'],
 };
 
+/** The usual file extension for each type - what an icon theme needs to pick the right icon
+ * for a resource whose name has no (or a different) extension, e.g. "sync_Lookup". */
+const ICON_EXTENSIONS: Record<number, string[]> = {
+	...LINKABLE_EXTENSIONS,
+	5: ['png'],
+	6: ['jpg', 'jpeg'],
+	7: ['gif'],
+	8: ['xap'],
+	10: ['ico'],
+};
+
+/** The name with its type's usual extension appended when it doesn't already end in one that
+ * matches - "sync_Lookup" (JavaScript) becomes "sync_Lookup.js", "new_/a.js" stays as is. Only
+ * for choosing an icon; never shown or sent anywhere. */
+export function nameWithTypeExtension(name: string, webresourcetype: number): string {
+	const extensions = ICON_EXTENSIONS[webresourcetype];
+	if (!extensions) {return name;}
+	const lastSegment = name.slice(name.lastIndexOf('/') + 1);
+	const dot = lastSegment.lastIndexOf('.');
+	const extension = dot === -1 ? '' : lastSegment.slice(dot + 1).toLowerCase();
+	return extensions.includes(extension) ? name : `${name}.${extensions[0]}`;
+}
+
 /** Types offered by "Create Web Resource" (new, empty content). */
 export const CREATABLE_TYPES: { type: number; label: string }[] = [
 	{ type: 3, label: 'JavaScript' },
