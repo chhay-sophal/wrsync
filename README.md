@@ -105,6 +105,15 @@ or discard them, so nothing unsaved is lost silently.
 
 Publishing uploads the linked file's current content and publishes it in one step.
 
+You can also publish straight from the editor, without opening the sidebar. In a linked
+file, click the **cloud-upload** button in the editor title bar, press
+<kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>U</kbd> (<kbd>Cmd</kbd>+<kbd>Alt</kbd>+<kbd>U</kbd> on
+macOS), or run **Web Resource Sync: Publish This File** from the Command Palette. Unsaved
+changes are saved first, and you get the same confirmation as in the sidebar, including the
+warning when someone else changed the resource last. If the file is linked in more than one
+environment, you're asked which one to publish to. The shortcut can be changed in
+**Keyboard Shortcuts**.
+
 ### 8. Create a new web resource
 
 Click the **+** (Create) button in the toolbar, fill in a name (e.g. `new_/scripts/myscript.js`),

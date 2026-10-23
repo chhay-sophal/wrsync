@@ -15,6 +15,11 @@ All notable changes to the "wrsync" extension will be documented in this file.
   unlinked web resources by matching names, confirms candidates by comparing content, and
   links the rows you tick in one go. Ambiguous and name-only matches start unticked. The
   sidebar picks up links made there (or anywhere else) immediately.
+- Added **Publish This File**: publish a linked file straight from the editor via its
+  title-bar button, <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>U</kbd>, or the Command Palette. It
+  saves first, confirms (with the changed-by-someone-else warning), and the sidebar's
+  Modified state updates afterwards. The extension now activates on startup so the button
+  is available before the sidebar is opened.
 - Faster modified-check for large solutions: linked resources' Dataverse content is now
   fetched in batched requests (up to 50 per request) instead of one request per resource,
   for both the cards and the Activity Bar badge, which now share a single comparison.

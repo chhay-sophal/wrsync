@@ -2,7 +2,7 @@ import * as fs from 'node:fs';
 import * as vscode from 'vscode';
 import { watchWorkspaceFiles } from './fileWatcher';
 import { onDidChangeLinks } from './linksStore';
-import { scheduleModifiedCountRefresh, setBadgeTarget } from './modifiedTracker';
+import { onDidChangeRemoteContent, scheduleModifiedCountRefresh, setBadgeTarget } from './modifiedTracker';
 import { dispatchRpc } from './rpc';
 
 /**
@@ -29,6 +29,9 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
 		const linksSubscription = onDidChangeLinks(() => {
 			webviewView.webview.postMessage({ type: 'linksChanged' });
 		});
+		const remoteContentSubscription = onDidChangeRemoteContent(() => {
+			webviewView.webview.postMessage({ type: 'recheckModified' });
+		});
 
 		webviewView.webview.onDidReceiveMessage((message: { type: string; id?: string; method?: string; params?: unknown }) => {
 			if (message.type === 'rpc') {
@@ -45,6 +48,7 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
 		webviewView.onDidDispose(() => {
 			watcher.dispose();
 			linksSubscription.dispose();
+			remoteContentSubscription.dispose();
 			setBadgeTarget(undefined);
 		});
 	}

@@ -7,6 +7,15 @@ import { listLinks, type ResourceLink } from './linksStore';
 const DEBOUNCE_MS = 500;
 
 let currentWebviewView: vscode.WebviewView | undefined;
+
+const remoteContentChanged = new vscode.EventEmitter<void>();
+/** Fires when web resource content was changed in Dataverse from outside the sidebar (e.g.
+ * "Publish This File" in the editor), so the sidebar re-checks its cards' Modified state. */
+export const onDidChangeRemoteContent = remoteContentChanged.event;
+
+export function notifyRemoteContentChanged(): void {
+	remoteContentChanged.fire();
+}
 let debounceTimer: ReturnType<typeof setTimeout> | undefined;
 
 /** Sets which webview view's Activity Bar badge reflects the modified-file count. Called

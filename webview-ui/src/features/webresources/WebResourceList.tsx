@@ -151,6 +151,16 @@ export function WebResourceList({
     checkModified(links);
   }, [links, checkModified]);
 
+  // Content can also change in Dataverse from outside this view ("Publish This File" in the
+  // editor); the extension announces it so the cards' Modified state catches up.
+  useEffect(() => {
+    function handleMessage(ev: MessageEvent) {
+      if ((ev.data as { type?: string })?.type === "recheckModified") checkModified(links);
+    }
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, [links, checkModified]);
+
   // Incremental re-check when a watched local file changes.
   useEffect(() => {
     checkModified(links.filter((link) => modifiedPaths.has(link.localPath)));

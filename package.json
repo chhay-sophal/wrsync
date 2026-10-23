@@ -23,7 +23,9 @@
     "dynamics 365",
     "web resources"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
@@ -46,6 +48,11 @@
       {
         "command": "wrsync.browseWebResources",
         "title": "Web Resource Sync: Browse Web Resources"
+      },
+      {
+        "command": "wrsync.publishCurrentFile",
+        "title": "Web Resource Sync: Publish This File",
+        "icon": "$(cloud-upload)"
       }
     ],
     "viewsContainers": {
@@ -65,7 +72,30 @@
           "type": "webview"
         }
       ]
-    }
+    },
+    "menus": {
+      "editor/title": [
+        {
+          "command": "wrsync.publishCurrentFile",
+          "when": "wrsync.activeFileLinked && resourceScheme == file",
+          "group": "navigation"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "wrsync.publishCurrentFile",
+          "when": "wrsync.activeFileLinked"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "wrsync.publishCurrentFile",
+        "key": "ctrl+alt+u",
+        "mac": "cmd+alt+u",
+        "when": "editorTextFocus && wrsync.activeFileLinked"
+      }
+    ]
   },
   "scripts": {
     "postinstall": "npm --prefix webview-ui install",

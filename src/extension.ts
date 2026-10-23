@@ -10,6 +10,7 @@ import {
 import { initLinkSuggestionsPanel } from './linkSuggestionsPanel';
 import { initLinksStore } from './linksStore';
 import { initModifiedTracker } from './modifiedTracker';
+import { initPublishCurrentFile } from './publishCurrentFile';
 import { SidebarViewProvider } from './sidebarView';
 
 export function activate(context: vscode.ExtensionContext) {
@@ -18,6 +19,7 @@ export function activate(context: vscode.ExtensionContext) {
 	initCompareProvider(context);
 	initModifiedTracker(context);
 	initLinkSuggestionsPanel(context);
+	initPublishCurrentFile(context);
 
 	context.subscriptions.push(
 		vscode.window.registerWebviewViewProvider('wrsync.sidebar', new SidebarViewProvider(context.extensionUri), {
