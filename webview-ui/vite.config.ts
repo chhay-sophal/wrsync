@@ -4,16 +4,16 @@ import { defineConfig, type Plugin } from 'vite'
 
 /** `vite --mode mock` only: loads src/dev/mockVscode.ts ahead of main.tsx, so the UI runs in
  * a plain browser tab against fake data (module scripts run in document order, so the mock's
- * acquireVsCodeApi() exists before the app asks for it). Never applied to builds. */
+ * acquireVsCodeApi() exists before the app asks for it). Never applied to builds. Injected as
+ * its own tag at the top of <head> rather than by matching main.tsx's tag, which Vite rewrites
+ * (adding ?t=...) after a hot update. */
 function mockVscode(): Plugin {
   return {
     name: 'wrsync-mock-vscode',
     apply: 'serve',
-    transformIndexHtml: (html) =>
-      html.replace(
-        '<script type="module" src="/src/main.tsx">',
-        '<script type="module" src="/src/dev/mockVscode.ts"></script>\n    <script type="module" src="/src/main.tsx">'
-      ),
+    transformIndexHtml: () => [
+      { tag: 'script', attrs: { type: 'module', src: '/src/dev/mockVscode.ts' }, injectTo: 'head-prepend' },
+    ],
   }
 }
 
