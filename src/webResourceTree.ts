@@ -1,9 +1,8 @@
 import * as vscode from 'vscode';
 import { getAuthStatus } from './auth';
 import { getWebResourceContent, getWebResourceDetails, listWebResourcesForSolution, type WebResource } from './dataverseClient';
-import { watchWorkspaceFiles } from './fileWatcher';
 import { listLinks, onDidChangeLinks, type ResourceLink } from './linksStore';
-import { checkLinksModified, onDidChangeRemoteContent } from './modifiedTracker';
+import { checkUnchecked, isLinkModified, onDidChangeModified } from './modifiedTracker';
 import { filtersActive, getEnvironment, getFilters, getSolution, getSort, onDidChangeState } from './state';
 import {
 	imageMimeType,
@@ -93,7 +92,6 @@ export class WebResourceTree
 
 	private resources: WebResource[] | undefined;
 	private nodes = new Map<string, WebResourceNode>();
-	private modified = new Map<string, boolean>();
 	private loadError: string | undefined;
 	private loading = false;
 	private loadGeneration = 0;
@@ -120,16 +118,11 @@ export class WebResourceTree
 				if (this.loadedFor !== this.scopeKey()) {this.reload();}
 				else {this.render();}
 			}),
-			onDidChangeLinks(() => {
-				this.render();
-				this.checkModified();
-			}),
-			onDidChangeRemoteContent(() => this.checkModified()),
-			this.view.onDidChangeSelection(() => this.updateSelectionContext()),
-			watchWorkspaceFiles((event) => {
-				const affected = listLinks().filter((l) => l.localPath === event.path);
-				if (affected.length > 0) {this.checkModified(affected);}
-			})
+			// The modified tracker owns checking (on save, link changes, publish); the tree just
+			// re-renders when links or their Modified state change.
+			onDidChangeLinks(() => this.render()),
+			onDidChangeModified(() => this.render()),
+			this.view.onDidChangeSelection(() => this.updateSelectionContext())
 		);
 		this.reload();
 	}
@@ -156,7 +149,6 @@ export class WebResourceTree
 		this.resources = undefined;
 		this.loadError = undefined;
 		this.loading = false;
-		this.modified.clear();
 		this.render();
 		if (!environment || !solution || !(await getAuthStatus()).signedIn) {return;}
 		if (generation !== this.loadGeneration) {return;}
@@ -173,31 +165,7 @@ export class WebResourceTree
 		}
 		this.loading = false;
 		this.render();
-		await this.checkModified();
-	}
-
-	/** Re-checks Modified for the given links (default: every link in this environment) with one
-	 * batched Dataverse request. A failed check leaves the previous state alone. */
-	async checkModified(links?: ResourceLink[]): Promise<void> {
-		const environment = getEnvironment();
-		if (!environment || !this.resources) {return;}
-		const toCheck = (links ?? listLinks()).filter((l) => l.environmentId === environment.id);
-		if (toCheck.length === 0) {return;}
-		try {
-			const result = await checkLinksModified(environment.apiUrl, toCheck);
-			if (getEnvironment()?.id !== environment.id) {return;}
-			const changedUris: vscode.Uri[] = [];
-			for (const [id, isModified] of Object.entries(result)) {
-				if (this.modified.get(id) !== isModified) {
-					this.modified.set(id, isModified);
-					const node = this.nodes.get(id);
-					if (node) {changedUris.push(resourceUri(node.resource));}
-				}
-			}
-			if (changedUris.length > 0) {this.render();}
-		} catch {
-			// Transient failure - keep the last known state rather than guess.
-		}
+		if (this.resources) {checkUnchecked(environment.id);}
 	}
 
 	/** Rebuilds the nodes from the loaded resources, links and Modified state, and refreshes the
@@ -213,7 +181,7 @@ export class WebResourceTree
 				resource,
 				link,
 				// A managed resource can't be published, so a leftover link never makes it "modified".
-				modified: link !== undefined && !resource.ismanaged && this.modified.get(resource.webresourceid) === true,
+				modified: link !== undefined && !resource.ismanaged && isLinkModified(link),
 				mismatched: link !== undefined && !isLinkableFile(resource.webresourcetype, link.localPath),
 				linkable: !resource.ismanaged && linkableExtensions(resource.webresourcetype) !== null,
 				viewable: isTextType(resource.webresourcetype) || isImageType(resource.webresourcetype),

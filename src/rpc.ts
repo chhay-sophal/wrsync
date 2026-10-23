@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
 import { getWebResourceContent } from './dataverseClient';
 import { createLinks, type ResourceLink } from './linksStore';
-import { scheduleModifiedCountRefresh } from './modifiedTracker';
 import { getWorkspaceFileContent } from './workspaceFiles';
 
 interface RpcRequest {
@@ -18,11 +17,8 @@ const handlers: Record<string, Handler> = {
 	'dataverse.getWebResourceContent': (params: { orgApiUrl: string; webresourceId: string }) =>
 		getWebResourceContent(params.orgApiUrl, params.webresourceId),
 	'workspace.getFileContent': (params: { path: string }) => getWorkspaceFileContent(params.path),
-	'links.createMany': async (params: { links: Omit<ResourceLink, 'id'>[] }) => {
-		const created = await createLinks(params.links);
-		scheduleModifiedCountRefresh();
-		return created;
-	},
+	// The modified tracker checks the new links itself (it listens for link changes).
+	'links.createMany': (params: { links: Omit<ResourceLink, 'id'>[] }) => createLinks(params.links),
 };
 
 /** Dispatches an { type: 'rpc' } message from the webview to the matching function in this

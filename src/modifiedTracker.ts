@@ -2,53 +2,174 @@ import * as vscode from 'vscode';
 import { getAccessTokenSilent, getAuthStatus, POWER_PLATFORM_RESOURCE } from './auth';
 import { getWebResourceContents, toApiUrl } from './dataverseClient';
 import { watchWorkspaceFiles } from './fileWatcher';
-import { listLinks, type ResourceLink } from './linksStore';
+import { listLinks, onDidChangeLinks, type ResourceLink } from './linksStore';
+import { getEnvironment } from './state';
 
-const DEBOUNCE_MS = 500;
+/** Saves of the same file within this window (e.g. auto-save while typing) are checked once. */
+const FILE_DEBOUNCE_MS = 300;
+
+/**
+ * The Modified state of every link - the single source for the tree's M marks and the
+ * Activity Bar badge, so the two always agree and nothing is checked twice.
+ *
+ * Checking means downloading Dataverse content, so it's kept incremental: a full check only on
+ * startup, sign-in and Refresh; otherwise only what changed - a saved file's links, added or
+ * re-pointed links, just-published resources. Keyed by environment + web resource; each entry
+ * remembers which local path it was checked against, so re-pointing a link re-checks it.
+ */
+const states = new Map<string, { localPath: string; modified: boolean }>();
+/** Latest check number per key, so a slow, older check can't overwrite a newer result. */
+const latestCheck = new Map<string, number>();
+let checkCounter = 0;
+/** Environment id -> Web API URL for the session; the environment list is a Power Platform call. */
+let apiUrlCache: Map<string, string> | undefined;
+
+const modifiedChanged = new vscode.EventEmitter<void>();
+/** Fires whenever any link's Modified state changes. */
+export const onDidChangeModified = modifiedChanged.event;
 
 /** Anything with a view badge - the "Web Resources" tree view. */
 type BadgeTarget = { badge?: vscode.ViewBadge };
-
 let badgeTarget: BadgeTarget | undefined;
 
-const remoteContentChanged = new vscode.EventEmitter<void>();
-/** Fires after web resource content was changed in Dataverse by this extension (a publish), so
- * the tree re-checks its Modified state. */
-export const onDidChangeRemoteContent = remoteContentChanged.event;
+const keyOf = (link: Pick<ResourceLink, 'environmentId' | 'webresourceId'>) => `${link.environmentId}::${link.webresourceId}`;
 
-export function notifyRemoteContentChanged(): void {
-	remoteContentChanged.fire();
+/** Whether the link's local file differs from Dataverse (false until it's been checked). */
+export function isLinkModified(link: ResourceLink): boolean {
+	const state = states.get(keyOf(link));
+	return state !== undefined && state.localPath === link.localPath && state.modified;
 }
-let debounceTimer: ReturnType<typeof setTimeout> | undefined;
 
-/** Sets which view's badge (shown on the Activity Bar icon) reflects the modified-file count. */
+/** Sets which view's badge (shown on the Activity Bar icon) reflects the modified count. */
 export function setBadgeTarget(target: BadgeTarget | undefined): void {
 	badgeTarget = target;
-	scheduleModifiedCountRefresh();
+	updateBadge();
 }
 
-/** Debounced trigger for a full recompute — coalesces bursts of file-save events and rapid
- * successive RPC calls (e.g. publishing several resources in a row) into one pass. */
-export function scheduleModifiedCountRefresh(): void {
-	if (debounceTimer) {clearTimeout(debounceTimer);}
-	debounceTimer = setTimeout(() => {
-		debounceTimer = undefined;
-		refreshModifiedCount();
-	}, DEBOUNCE_MS);
-}
-
-/** Starts the file watcher that keeps the badge live even while the sidebar view isn't the
- * visible one (switching to Explorer, Source Control, etc. doesn't stop extension-host code,
- * only the webview's own suspended scripts) and does a first pass so the badge is right as
- * soon as the extension activates. */
+/** Starts watching linked files and link changes, and does the startup check. */
 export function initModifiedTracker(context: vscode.ExtensionContext): void {
-	const watcher = watchWorkspaceFiles((event) => {
-		if (listLinks().some((link) => link.localPath === event.path)) {
-			scheduleModifiedCountRefresh();
+	const fileTimers = new Map<string, ReturnType<typeof setTimeout>>();
+	context.subscriptions.push(
+		watchWorkspaceFiles((event) => {
+			if (!listLinks().some((l) => l.localPath === event.path)) {return;}
+			clearTimeout(fileTimers.get(event.path));
+			fileTimers.set(
+				event.path,
+				setTimeout(() => {
+					fileTimers.delete(event.path);
+					recheck(listLinks().filter((l) => l.localPath === event.path));
+				}, FILE_DEBOUNCE_MS)
+			);
+		}),
+		onDidChangeLinks(() => syncWithLinks()),
+		modifiedChanged,
+		{ dispose: () => fileTimers.forEach((t) => clearTimeout(t)) }
+	);
+	recheckAll();
+}
+
+/** Full check of every link - startup and sign-in. */
+export function recheckAll(): Promise<void> {
+	return recheck(listLinks());
+}
+
+/** Full check of one environment's links - the tree's Refresh. */
+export function recheckEnvironment(environmentId: string): Promise<void> {
+	return recheck(listLinks().filter((l) => l.environmentId === environmentId));
+}
+
+/** Checks the environment's links that have never been checked - e.g. the startup check had no
+ * silent token for it yet. Called once the tree has loaded a solution; usually a no-op. */
+export function checkUnchecked(environmentId: string): Promise<void> {
+	return recheck(listLinks().filter((l) => l.environmentId === environmentId && !states.has(keyOf(l))));
+}
+
+/** After a publish: only the published resources can have changed in Dataverse. */
+export function recheckWebResources(webresourceIds: string[]): Promise<void> {
+	const ids = new Set(webresourceIds.map((id) => id.toLowerCase()));
+	return recheck(listLinks().filter((l) => ids.has(l.webresourceId.toLowerCase())));
+}
+
+/** On sign-out: forget everything (it belongs to the signed-in account). */
+export function forgetAll(): void {
+	states.clear();
+	latestCheck.clear();
+	apiUrlCache = undefined;
+	changed();
+}
+
+/** Links were added, removed or re-pointed: drop states for links that are gone and check only
+ * the new or re-pointed ones - no re-download of everything else. */
+function syncWithLinks(): void {
+	const links = listLinks();
+	const current = new Map(links.map((l) => [keyOf(l), l]));
+	let removed = false;
+	for (const key of states.keys()) {
+		if (!current.has(key)) {
+			states.delete(key);
+			removed = true;
 		}
-	});
-	context.subscriptions.push(watcher);
-	scheduleModifiedCountRefresh();
+	}
+	if (removed) {changed();}
+	recheck(links.filter((l) => states.get(keyOf(l))?.localPath !== l.localPath));
+}
+
+/** Checks the given links with one batched content download per environment, using silent
+ * tokens only (this runs in the background). Links that can't be checked right now keep their
+ * last known state. */
+async function recheck(links: ResourceLink[]): Promise<void> {
+	if (links.length === 0 || !(await getAuthStatus()).signedIn) {return;}
+	const checkIds = new Map(links.map((l) => [keyOf(l), ++checkCounter]));
+	checkIds.forEach((id, key) => latestCheck.set(key, id));
+
+	const apiUrls = await resolveApiUrls([...new Set(links.map((l) => l.environmentId))]);
+	const byEnvironment = new Map<string, ResourceLink[]>();
+	for (const link of links) {
+		byEnvironment.set(link.environmentId, [...(byEnvironment.get(link.environmentId) ?? []), link]);
+	}
+
+	let anyChanged = false;
+	await Promise.all(
+		[...byEnvironment].map(async ([environmentId, envLinks]) => {
+			const apiUrl = apiUrls.get(environmentId);
+			const token = apiUrl ? await getAccessTokenSilent(apiUrl) : null;
+			if (!apiUrl || !token) {return;}
+			let result: Record<string, boolean>;
+			try {
+				result = await checkLinksModified(apiUrl, envLinks, token);
+			} catch {
+				return; // Transient failure - keep the last known state.
+			}
+			for (const link of envLinks) {
+				const key = keyOf(link);
+				if (latestCheck.get(key) !== checkIds.get(key) || !(link.webresourceId in result)) {continue;}
+				const next = { localPath: link.localPath, modified: result[link.webresourceId] };
+				const previous = states.get(key);
+				if (previous?.localPath !== next.localPath || previous.modified !== next.modified) {
+					states.set(key, next);
+					anyChanged = true;
+				}
+			}
+		})
+	);
+	if (anyChanged) {changed();}
+}
+
+/** Web API URLs for the given environments. The current environment's is already known, and
+ * the rest are cached for the session, so the environment list is fetched at most once - and
+ * not at all when every link is in the current environment. */
+async function resolveApiUrls(environmentIds: string[]): Promise<Map<string, string>> {
+	const urls = new Map(apiUrlCache ?? []);
+	const current = getEnvironment();
+	if (current) {urls.set(current.id, current.apiUrl);}
+	if (environmentIds.some((id) => !urls.has(id))) {
+		const fetched = await listEnvironmentApiUrlsSilent();
+		if (fetched) {
+			apiUrlCache = fetched;
+			fetched.forEach((url, id) => urls.set(id, url));
+		}
+	}
+	return urls;
 }
 
 async function listEnvironmentApiUrlsSilent(): Promise<Map<string, string> | null> {
@@ -72,14 +193,13 @@ async function listEnvironmentApiUrlsSilent(): Promise<Map<string, string> | nul
 }
 
 /** Compares each link's local file with its content in one Dataverse environment, fetching
- * all the contents in batched requests rather than one per link. Used for both the tree's
- * Modified state and the Activity Bar badge, so the two always agree. Links whose
- * local file or Dataverse content can't be read right now are left out of the result rather
- * than guessed. Throws only if the Dataverse request itself fails. */
-export async function checkLinksModified(
+ * all the contents in batched requests rather than one per link. Links whose local file or
+ * Dataverse content can't be read right now are left out of the result rather than guessed.
+ * Throws only if the Dataverse request itself fails. */
+async function checkLinksModified(
 	orgApiUrl: string,
 	links: Pick<ResourceLink, 'webresourceId' | 'localPath'>[],
-	token?: string
+	token: string
 ): Promise<Record<string, boolean>> {
 	const folder = vscode.workspace.workspaceFolders?.[0];
 	if (!folder || links.length === 0) {return {};}
@@ -111,50 +231,13 @@ function normalizeForCompare(text: string): string {
 	return withoutBom.replace(/\r\n?/g, '\n');
 }
 
-async function refreshModifiedCount(): Promise<void> {
-	const folder = vscode.workspace.workspaceFolders?.[0];
-	const { signedIn } = await getAuthStatus();
-	if (!folder || !signedIn) {
-		setBadge(0);
-		return;
-	}
-
-	const links = listLinks();
-	if (links.length === 0) {
-		setBadge(0);
-		return;
-	}
-
-	const apiUrlByEnvironmentId = await listEnvironmentApiUrlsSilent();
-	if (!apiUrlByEnvironmentId) {
-		// No cached token available right now (e.g. it needs interactive re-consent) — leave
-		// the last known badge alone rather than flash it to zero.
-		return;
-	}
-
-	// One batched check per environment. A failed environment (no silent token, request error)
-	// just contributes nothing to this pass rather than failing the whole count.
-	const linksByApiUrl = new Map<string, ResourceLink[]>();
-	for (const link of links) {
-		const apiUrl = apiUrlByEnvironmentId.get(link.environmentId);
-		if (apiUrl) {linksByApiUrl.set(apiUrl, [...(linksByApiUrl.get(apiUrl) ?? []), link]);}
-	}
-	const counts = await Promise.all(
-		[...linksByApiUrl].map(async ([apiUrl, envLinks]) => {
-			const token = await getAccessTokenSilent(apiUrl);
-			if (!token) {return 0;}
-			try {
-				const modified = await checkLinksModified(apiUrl, envLinks, token);
-				return Object.values(modified).filter(Boolean).length;
-			} catch {
-				return 0;
-			}
-		})
-	);
-	setBadge(counts.reduce((sum, n) => sum + n, 0));
+function changed(): void {
+	updateBadge();
+	modifiedChanged.fire();
 }
 
-function setBadge(count: number): void {
+function updateBadge(): void {
 	if (!badgeTarget) {return;}
+	const count = listLinks().filter(isLinkModified).length;
 	badgeTarget.badge = count > 0 ? { value: count, tooltip: `${count} modified web resource(s)` } : undefined;
 }

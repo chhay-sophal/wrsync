@@ -3,8 +3,8 @@ import * as vscode from 'vscode';
 const textDecoder = new TextDecoder();
 
 export interface LocalFile {
+	/** Relative to the first workspace folder, with forward slashes. */
 	path: string;
-	mtimeMs: number;
 }
 
 // Keep in sync with LINKABLE_EXTENSIONS in webview-ui/src/features/webresources/webResourceTypes.ts.
@@ -31,13 +31,10 @@ export async function listWorkspaceFiles(): Promise<{ root: string | null; files
 		return { root: null, files: [] };
 	}
 
+	// Paths only - no per-file stat, which in a large repository meant thousands of file system
+	// calls every time Link or Suggest Links listed the workspace.
 	const uris = await vscode.workspace.findFiles(INCLUDE_GLOB, EXCLUDE_GLOB);
-	const files = await Promise.all(
-		uris.map(async (uri): Promise<LocalFile> => {
-			const stat = await vscode.workspace.fs.stat(uri);
-			return { path: vscode.workspace.asRelativePath(uri, false), mtimeMs: stat.mtime };
-		})
-	);
+	const files = uris.map((uri): LocalFile => ({ path: vscode.workspace.asRelativePath(uri, false) }));
 	files.sort((a, b) => a.path.localeCompare(b.path));
 
 	return { root: folder.uri.fsPath, files };

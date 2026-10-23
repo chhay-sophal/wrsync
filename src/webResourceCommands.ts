@@ -5,7 +5,7 @@ import { createWebResource, getWebResourceDetails, listEnvironments, listSolutio
 import { openLinkSuggestionsPanel } from './linkSuggestionsPanel';
 import { openRemoteMedia } from './mediaProvider';
 import { createLink, listLinks } from './linksStore';
-import { scheduleModifiedCountRefresh } from './modifiedTracker';
+import { forgetAll, recheckAll, recheckEnvironment } from './modifiedTracker';
 import {
 	clearSelection,
 	EMPTY_FILTERS,
@@ -141,6 +141,7 @@ export function registerWebResourceCommands(context: vscode.ExtensionContext, tr
 			vscode.window.showInformationMessage(`Signed in as ${username}`);
 			if (!getEnvironment()) {await pickEnvironment();}
 			tree.reload();
+			recheckAll();
 		})
 	);
 	register(
@@ -159,6 +160,7 @@ export function registerWebResourceCommands(context: vscode.ExtensionContext, tr
 			vscode.window.showInformationMessage(`Signed in as ${username}`);
 			if (!getEnvironment()) {await pickEnvironment();}
 			tree.reload();
+			recheckAll();
 		})
 	);
 	register(
@@ -167,7 +169,7 @@ export function registerWebResourceCommands(context: vscode.ExtensionContext, tr
 			await logout();
 			await clearSelection();
 			await updateSignedInContext();
-			scheduleModifiedCountRefresh();
+			forgetAll();
 			vscode.window.showInformationMessage('Signed out.');
 		})
 	);
@@ -181,7 +183,13 @@ export function registerWebResourceCommands(context: vscode.ExtensionContext, tr
 
 	register('wrsync.pickEnvironment', guarded('Pick environment', async () => (await pickEnvironment()) && pickSolution()));
 	register('wrsync.pickSolution', guarded('Pick solution', pickSolution));
-	register('wrsync.refresh', guarded('Refresh', () => tree.reload()));
+	register(
+		'wrsync.refresh',
+		guarded('Refresh', async () => {
+			const environment = getEnvironment();
+			await Promise.all([tree.reload(), environment ? recheckEnvironment(environment.id) : undefined]);
+		})
+	);
 
 	register(
 		'wrsync.createWebResource',
@@ -366,7 +374,6 @@ export function registerWebResourceCommands(context: vscode.ExtensionContext, tr
 				webresourceName: target.resource.name,
 				localPath: picked.path,
 			});
-			scheduleModifiedCountRefresh();
 		})
 	);
 	register(

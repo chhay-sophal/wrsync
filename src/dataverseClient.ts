@@ -108,6 +108,18 @@ async function callDataverse(
   return res;
 }
 
+/** IDs per request when filtering by many ids: each adds ~57 characters of $filter to the URL,
+ * so 50 keeps it comfortably within Dataverse's URL length limit. */
+const ID_BATCH_SIZE = 50;
+
+function batchIds(ids: string[]): string[][] {
+  const batches: string[][] = [];
+  for (let i = 0; i < ids.length; i += ID_BATCH_SIZE) {
+    batches.push(ids.slice(i, i + ID_BATCH_SIZE));
+  }
+  return batches;
+}
+
 export async function listSolutions(orgApiUrl: string): Promise<Solution[]> {
   const res = await callDataverse(
     orgApiUrl,
@@ -130,13 +142,19 @@ export async function listWebResourcesForSolution(
   const ids = components.value.map((c) => c.objectid);
   if (ids.length === 0) {return [];}
 
-  const filter = ids.map((id) => `webresourceid eq ${id}`).join(" or ");
-  const resourcesRes = await callDataverse(
-    orgApiUrl,
-    `webresourceset?$select=webresourceid,name,displayname,webresourcetype,ismanaged&$filter=${filter}`
+  // Batched like getWebResourceContents: one id filter for a whole large solution would push
+  // the URL past Dataverse's length limit, and the solution would fail to load.
+  const batches = await Promise.all(
+    batchIds(ids).map(async (batch) => {
+      const filter = batch.map((id) => `webresourceid eq ${id}`).join(" or ");
+      const res = await callDataverse(
+        orgApiUrl,
+        `webresourceset?$select=webresourceid,name,displayname,webresourcetype,ismanaged&$filter=${filter}`
+      );
+      return ((await res.json()) as { value: WebResource[] }).value;
+    })
   );
-  const data = (await resourcesRes.json()) as { value: WebResource[] };
-  return data.value;
+  return batches.flat();
 }
 
 export async function getWebResourceDetails(
@@ -206,25 +224,17 @@ export async function getOthersChanges(orgApiUrl: string, webresourceIds: string
     }));
 }
 
-/** IDs per batched request: each adds ~55 characters of $filter to the URL, so 50 keeps it
- * comfortably within Dataverse's URL length limit. */
-const CONTENT_BATCH_SIZE = 50;
-
-/** Fetches the base64 content of many web resources in batched requests (one per
- * CONTENT_BATCH_SIZE ids, run in parallel) instead of one request each. Keyed by lowercase
- * webresourceid; an empty resource maps to "". */
+/** Fetches the base64 content of many web resources in batched requests (see batchIds, run in
+ * parallel) instead of one request each. Keyed by lowercase webresourceid; an empty resource
+ * maps to "". */
 export async function getWebResourceContents(
   orgApiUrl: string,
   webresourceIds: string[],
   token?: string
 ): Promise<Map<string, string>> {
-  const batches: string[][] = [];
-  for (let i = 0; i < webresourceIds.length; i += CONTENT_BATCH_SIZE) {
-    batches.push(webresourceIds.slice(i, i + CONTENT_BATCH_SIZE));
-  }
   const contents = new Map<string, string>();
   await Promise.all(
-    batches.map(async (batch) => {
+    batchIds(webresourceIds).map(async (batch) => {
       const filter = batch.map((id) => `webresourceid eq ${id}`).join(" or ");
       const res = await callDataverse(orgApiUrl, `webresourceset?$select=webresourceid,content&$filter=${filter}`, {}, token);
       const data = (await res.json()) as { value: { webresourceid: string; content: string | null }[] };

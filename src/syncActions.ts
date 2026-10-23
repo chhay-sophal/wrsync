@@ -6,7 +6,7 @@ import {
 	updateWebResourceContent,
 } from './dataverseClient';
 import { deleteLink, type ResourceLink } from './linksStore';
-import { notifyRemoteContentChanged, scheduleModifiedCountRefresh } from './modifiedTracker';
+import { recheckWebResources } from './modifiedTracker';
 import { getWorkspaceFileContent, replaceWorkspaceFileContent } from './workspaceFiles';
 
 /** One linked web resource to publish: its local file's content is uploaded, then published. */
@@ -58,6 +58,7 @@ export async function confirmAndPublish(apiUrl: string, items: PublishItem[]): P
 	if (answer !== confirmLabel) {return false;}
 
 	const failed: string[] = [];
+	let uploaded: string[] = [];
 	await vscode.window.withProgress(
 		{
 			location: vscode.ProgressLocation.Notification,
@@ -71,7 +72,7 @@ export async function confirmAndPublish(apiUrl: string, items: PublishItem[]): P
 					return item;
 				})
 			);
-			const uploaded = results.flatMap((r, i) => {
+			uploaded = results.flatMap((r, i) => {
 				if (r.status === 'fulfilled') {return [r.value.webresourceId];}
 				failed.push(`${items[i].name}: ${(r.reason as Error).message}`);
 				return [];
@@ -79,8 +80,8 @@ export async function confirmAndPublish(apiUrl: string, items: PublishItem[]): P
 			if (uploaded.length > 0) {await publishWebResources(apiUrl, uploaded);}
 		}
 	);
-	notifyRemoteContentChanged();
-	scheduleModifiedCountRefresh();
+	// Only the published resources can have changed in Dataverse - re-check just those.
+	recheckWebResources(uploaded);
 
 	if (failed.length > 0) {
 		vscode.window.showErrorMessage(`Some web resources couldn't be published:\n${failed.join('\n')}`);
@@ -108,8 +109,8 @@ export async function confirmAndPull(apiUrl: string, item: PublishItem): Promise
 	const base64 = await getWebResourceContent(apiUrl, item.webresourceId);
 	const text = Buffer.from(base64, 'base64').toString('utf-8');
 	// A leading BOM is an encoding marker, not content; the document keeps its own encoding.
+	// Saving the file is picked up by the modified tracker's watcher, which re-checks it.
 	await replaceWorkspaceFileContent(item.localPath, text.charCodeAt(0) === 0xfeff ? text.slice(1) : text);
-	scheduleModifiedCountRefresh();
 	return true;
 }
 
@@ -122,6 +123,5 @@ export async function confirmAndUnlink(link: ResourceLink): Promise<boolean> {
 	);
 	if (answer !== 'Unlink') {return false;}
 	await deleteLink(link.id);
-	scheduleModifiedCountRefresh();
 	return true;
 }
