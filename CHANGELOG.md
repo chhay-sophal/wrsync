@@ -12,7 +12,7 @@ All notable changes to the "wrsync" extension will be documented in this file.
 - Modified web resources are marked **M** in the modified colour (like changed files in
   Explorer), and clicking one opens Compare; clicking an in-sync linked one opens its local
   file. Hovering shows details, including who last modified it in Dataverse.
-- Filters (type, managed state, modified only) and sort live in the view's title bar and
+- Filters (type, managed state, modified only, linked only) and sort live in the view's title bar and
   are remembered per environment and solution.
 - Publishing asks for confirmation first, naming the target environment, and warns when a
   resource was last changed in Dataverse by someone else (with who and when), so you don't

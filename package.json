@@ -102,6 +102,16 @@
         "category": "Web Resource Sync"
       },
       {
+        "command": "wrsync.showLinkedOnly",
+        "title": "Show Linked Only",
+        "category": "Web Resource Sync"
+      },
+      {
+        "command": "wrsync.showAllNotOnlyLinked",
+        "title": "Show Linked Only ✓",
+        "category": "Web Resource Sync"
+      },
+      {
         "command": "wrsync.clearFilters",
         "title": "Clear Filters",
         "category": "Web Resource Sync",
@@ -215,6 +225,16 @@
           "when": "wrsync.modifiedOnly"
         },
         {
+          "command": "wrsync.showLinkedOnly",
+          "group": "1_filter@4",
+          "when": "!wrsync.linkedOnly"
+        },
+        {
+          "command": "wrsync.showAllNotOnlyLinked",
+          "group": "1_filter@4",
+          "when": "wrsync.linkedOnly"
+        },
+        {
           "command": "wrsync.clearFilters",
           "group": "2_clear",
           "when": "wrsync.filtersActive"
@@ -238,6 +258,16 @@
           "command": "wrsync.showAllNotOnlyModified",
           "group": "1_filter@3",
           "when": "wrsync.modifiedOnly"
+        },
+        {
+          "command": "wrsync.showLinkedOnly",
+          "group": "1_filter@4",
+          "when": "!wrsync.linkedOnly"
+        },
+        {
+          "command": "wrsync.showAllNotOnlyLinked",
+          "group": "1_filter@4",
+          "when": "wrsync.linkedOnly"
         },
         {
           "command": "wrsync.clearFilters",
@@ -456,6 +486,14 @@
         {
           "command": "wrsync.publishSelected",
           "when": "wrsync.selectionHasSyncable"
+        },
+        {
+          "command": "wrsync.showAllNotOnlyLinked",
+          "when": "false"
+        },
+        {
+          "command": "wrsync.showLinkedOnly",
+          "when": "wrsync.signedIn && wrsync.hasSolution"
         }
       ]
     },

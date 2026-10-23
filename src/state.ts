@@ -10,6 +10,8 @@ export interface Filters {
 	managed: ManagedFilter;
 	/** Only resources whose linked local file differs from Dataverse. */
 	modifiedOnly: boolean;
+	/** Only resources linked to a local file. */
+	linkedOnly: boolean;
 }
 
 export interface SortState {
@@ -17,7 +19,7 @@ export interface SortState {
 	direction: 'asc' | 'desc';
 }
 
-export const EMPTY_FILTERS: Filters = { types: [], managed: 'all', modifiedOnly: false };
+export const EMPTY_FILTERS: Filters = { types: [], managed: 'all', modifiedOnly: false, linkedOnly: false };
 
 const KEY_ENVIRONMENT = 'wrsync.environment';
 const KEY_SOLUTION = 'wrsync.solution';
@@ -88,7 +90,7 @@ export async function setSort(sort: SortState | undefined): Promise<void> {
 }
 
 export function filtersActive(filters = getFilters()): boolean {
-	return filters.types.length > 0 || filters.managed !== 'all' || filters.modifiedOnly;
+	return filters.types.length > 0 || filters.managed !== 'all' || filters.modifiedOnly || filters.linkedOnly;
 }
 
 /** On sign-out: forget the environment and solution (they belong to the signed-in account). */
@@ -110,4 +112,5 @@ function updateContextKeys(): void {
 	vscode.commands.executeCommand('setContext', 'wrsync.hasSolution', getSolution() !== undefined);
 	vscode.commands.executeCommand('setContext', 'wrsync.filtersActive', filtersActive(filters));
 	vscode.commands.executeCommand('setContext', 'wrsync.modifiedOnly', filters.modifiedOnly);
+	vscode.commands.executeCommand('setContext', 'wrsync.linkedOnly', filters.linkedOnly);
 }

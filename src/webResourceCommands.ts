@@ -268,6 +268,13 @@ export function registerWebResourceCommands(context: vscode.ExtensionContext, tr
 	});
 	register('wrsync.showModifiedOnly', toggleModifiedOnly);
 	register('wrsync.showAllNotOnlyModified', toggleModifiedOnly);
+	// Two commands per toggle so the Filter menu can show a check mark on the "on" one.
+	const toggleLinkedOnly = guarded('Show linked only', async () => {
+		const filters = getFilters();
+		await setFilters({ ...filters, linkedOnly: !filters.linkedOnly });
+	});
+	register('wrsync.showLinkedOnly', toggleLinkedOnly);
+	register('wrsync.showAllNotOnlyLinked', toggleLinkedOnly);
 	register('wrsync.clearFilters', guarded('Clear filters', () => setFilters(EMPTY_FILTERS)));
 	register(
 		'wrsync.sortBy',
