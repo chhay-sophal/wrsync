@@ -77,6 +77,12 @@ async function publishCurrentFile(uri?: vscode.Uri): Promise<void> {
 		if (document?.isDirty && !(await document.save())) {return;}
 
 		const details = await getWebResourceDetails(apiUrl, link.webresourceId);
+		if (details.ismanaged) {
+			vscode.window.showErrorMessage(
+				`${details.name} is managed (it comes from an installed solution) and can't be published from here. Unlink ${link.localPath} to tidy up.`
+			);
+			return;
+		}
 		if (!isLinkableFile(details.webresourcetype, link.localPath)) {
 			vscode.window.showErrorMessage(
 				`${link.localPath} can't be published to ${details.name}: its file type doesn't match the web resource's type. Unlink it and link a matching file.`

@@ -170,6 +170,12 @@
         "icon": "$(diff)"
       },
       {
+        "command": "wrsync.viewContent",
+        "title": "View Content",
+        "category": "Web Resource Sync",
+        "icon": "$(eye)"
+      },
+      {
         "command": "wrsync.openLocalFile",
         "title": "Open Local File",
         "category": "Web Resource Sync",
@@ -422,9 +428,18 @@
           "command": "wrsync.showDetails",
           "when": "view == wrsync.webResources && viewItem =~ /;webresource;/",
           "group": "3_info@1"
+        },
+        {
+          "command": "wrsync.viewContent",
+          "when": "view == wrsync.webResources && viewItem =~ /;viewable;/",
+          "group": "0_view@1"
         }
       ],
       "commandPalette": [
+        {
+          "command": "wrsync.viewContent",
+          "when": "false"
+        },
         {
           "command": "wrsync.link",
           "when": "false"

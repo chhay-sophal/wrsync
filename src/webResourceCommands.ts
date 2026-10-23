@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { getAuthStatus, login, logout } from './auth';
-import { openCompareDiff } from './compareProvider';
+import { openCompareDiff, openRemoteContent } from './compareProvider';
 import { createWebResource, getWebResourceDetails, listEnvironments, listSolutions } from './dataverseClient';
 import { openLinkSuggestionsPanel } from './linkSuggestionsPanel';
 import { createLink, listLinks } from './linksStore';
@@ -330,6 +330,14 @@ export function registerWebResourceCommands(context: vscode.ExtensionContext, tr
 			if (!target) {return;}
 			const environment = requireEnvironment();
 			const solution = getSolution();
+			if (!target.linkable) {
+				vscode.window.showInformationMessage(
+					target.resource.ismanaged
+						? `${target.resource.name} is managed and read-only here - use View Content to see it.`
+						: `${typeLabel(target.resource.webresourcetype)} web resources can't be linked.`
+				);
+				return;
+			}
 			const extensions = linkableExtensions(target.resource.webresourcetype);
 			if (!extensions || !solution) {return;}
 			const { files } = await listWorkspaceFiles();
@@ -414,7 +422,26 @@ export function registerWebResourceCommands(context: vscode.ExtensionContext, tr
 				orgApiUrl: requireEnvironment().apiUrl,
 				webresourceId: target.resource.webresourceid,
 				webresourceName: target.resource.name,
+				webresourcetype: target.resource.webresourcetype,
 				localPath: target.link.localPath,
+				preserveFocus: preservesFocus(options),
+			});
+		})
+	);
+	register(
+		'wrsync.viewContent',
+		guarded('View content', async (node?: WebResourceNode, options?: unknown) => {
+			const target = one(tree, node);
+			if (!target) {return;}
+			if (!target.viewable) {
+				vscode.window.showInformationMessage(`${typeLabel(target.resource.webresourcetype)} content can't be shown as text.`);
+				return;
+			}
+			await openRemoteContent({
+				orgApiUrl: requireEnvironment().apiUrl,
+				webresourceId: target.resource.webresourceid,
+				webresourceName: target.resource.name,
+				webresourcetype: target.resource.webresourcetype,
 				preserveFocus: preservesFocus(options),
 			});
 		})

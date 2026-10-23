@@ -5,7 +5,7 @@ import { watchWorkspaceFiles } from './fileWatcher';
 import { listLinks, onDidChangeLinks, type ResourceLink } from './linksStore';
 import { checkLinksModified, onDidChangeRemoteContent } from './modifiedTracker';
 import { filtersActive, getEnvironment, getFilters, getSolution, getSort, onDidChangeState } from './state';
-import { isLinkableFile, linkableExtensions, nameWithTypeExtension, typeLabel } from './webResourceTypes';
+import { isLinkableFile, isTextType, linkableExtensions, nameWithTypeExtension, typeLabel } from './webResourceTypes';
 import type { ItemClickOptions } from './webResourceCommands';
 
 /** Gives each tree item a resourceUri so VS Code treats it like a file: the icon theme picks an
@@ -21,13 +21,16 @@ export interface WebResourceNode {
 	modified: boolean;
 	/** Linked to a file whose type doesn't match (a link made before type checks existed). */
 	mismatched: boolean;
-	/** The type can be linked at all (false for binary types). */
+	/** Can be linked to a local file: an unmanaged resource of a text type. Managed resources
+	 * come from installed solutions and are read-only here - view their content instead. */
 	linkable: boolean;
+	/** Text content that View Content can show (false for binary types like images). */
+	viewable: boolean;
 }
 
 /** Linked, out of sync, and safe to publish/pull/compare. */
 export function canSync(node: WebResourceNode): boolean {
-	return node.link !== undefined && node.modified && !node.mismatched;
+	return node.link !== undefined && node.modified && !node.mismatched && !node.resource.ismanaged;
 }
 
 /** The item's identity for icons and decorations. The path ends in the type's extension even
@@ -46,6 +49,7 @@ function contextValue(node: WebResourceNode): string {
 	else if (node.linkable) {flags.push('linkable');}
 	if (canSync(node)) {flags.push('syncable');}
 	if (node.mismatched) {flags.push('mismatched');}
+	if (node.viewable) {flags.push('viewable');}
 	return `;${flags.join(';')};`;
 }
 
@@ -186,9 +190,11 @@ export class WebResourceTree
 			this.nodes.set(resource.webresourceid, {
 				resource,
 				link,
-				modified: link !== undefined && this.modified.get(resource.webresourceid) === true,
+				// A managed resource can't be published, so a leftover link never makes it "modified".
+				modified: link !== undefined && !resource.ismanaged && this.modified.get(resource.webresourceid) === true,
 				mismatched: link !== undefined && !isLinkableFile(resource.webresourcetype, link.localPath),
-				linkable: linkableExtensions(resource.webresourcetype) !== null,
+				linkable: !resource.ismanaged && linkableExtensions(resource.webresourcetype) !== null,
+				viewable: isTextType(resource.webresourcetype),
 			});
 		}
 
@@ -271,13 +277,16 @@ export class WebResourceTree
 		item.iconPath = vscode.ThemeIcon.File;
 		item.description = link?.localPath;
 		item.contextValue = contextValue(node);
-		// Click: compare a modified resource; open the local file of an in-sync linked one. Both
-		// open as a preview without taking focus, so the tree keeps focus (like Explorer).
+		// Click: compare a modified resource; open the local file of an in-sync linked one; show
+		// the Dataverse content of anything else (managed, or not linked). All open as a preview
+		// without taking focus, so the tree keeps focus (like Explorer).
 		const click: ItemClickOptions = { preserveFocus: true };
 		if (canSync(node)) {
 			item.command = { command: 'wrsync.compare', title: 'Compare', arguments: [node, click] };
-		} else if (link && !node.mismatched) {
+		} else if (link && !node.mismatched && !resource.ismanaged) {
 			item.command = { command: 'wrsync.openLocalFile', title: 'Open Local File', arguments: [node, click] };
+		} else if (node.viewable) {
+			item.command = { command: 'wrsync.viewContent', title: 'View Content', arguments: [node, click] };
 		}
 		item.tooltip = this.tooltip(node);
 		return item;
@@ -303,7 +312,12 @@ export class WebResourceTree
 		const md = new vscode.MarkdownString(undefined, true);
 		md.appendMarkdown(`**${escapeMd(resource.name)}**\n\n`);
 		md.appendMarkdown(`${escapeMd(resource.displayname)} · ${typeLabel(resource.webresourcetype)} · ${resource.ismanaged ? 'Managed' : 'Unmanaged'}\n\n`);
-		if (link) {
+		if (resource.ismanaged) {
+			md.appendMarkdown('$(lock) Managed: read-only here. Click to view its content.\n\n');
+			if (link) {
+				md.appendMarkdown(`$(link) Still linked to \`${escapeMd(link.localPath)}\` - unlink it to tidy up.\n\n`);
+			}
+		} else if (link) {
 			md.appendMarkdown(`$(link) \`${escapeMd(link.localPath)}\`\n\n`);
 			if (node.mismatched) {
 				md.appendMarkdown(`$(error) This file type can't be published to a ${typeLabel(resource.webresourcetype)} web resource. Unlink it and link a matching file.\n\n`);
@@ -313,7 +327,11 @@ export class WebResourceTree
 				md.appendMarkdown('$(check) In sync with Dataverse.\n\n');
 			}
 		} else {
-			md.appendMarkdown(node.linkable ? 'Not linked to a local file.\n\n' : `${typeLabel(resource.webresourcetype)}: linking not supported.\n\n`);
+			md.appendMarkdown(
+				node.linkable
+					? 'Not linked to a local file. Click to view its content.\n\n'
+					: `${typeLabel(resource.webresourcetype)}: linking not supported.\n\n`
+			);
 		}
 		if (extraLine) {md.appendMarkdown(escapeMd(extraLine));}
 		return md;

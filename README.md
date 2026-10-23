@@ -64,6 +64,13 @@ The view lists the solution's web resources, with file icons from your icon them
 - **Sort By...** (in the **...** menu): name, display name, type, or managed state.
 - **Show Details** (right-click) adds the description, dates, and ID, with buttons to
   copy the name or ID.
+- **View Content** (click, or right-click → **View Content**) opens a web resource's current
+  Dataverse content in a read-only tab, with syntax highlighting. It's what clicking does for
+  anything not linked to a local file.
+
+**Managed** web resources (from installed solutions) are read-only here: they can't be
+linked or published, and clicking one shows its content. A link made to one earlier keeps
+its **unlink** button so you can tidy it up.
 
 Selection works like Explorer: click to select, <kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+click to add,
 <kbd>Shift</kbd>+click for a range, arrow keys to move, <kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>A</kbd>
@@ -73,8 +80,8 @@ for all.
 
 Hover a web resource and click its **link** button (or right-click → **Link to Local
 File...**), then pick a file. Only files matching the resource's type are offered (e.g.
-`.js` for JavaScript); image types (PNG, JPG, GIF, ICO) can't be linked. The linked path
-appears next to the name.
+`.js` for JavaScript); image types (PNG, JPG, GIF, ICO) and managed web resources can't be
+linked. The linked path appears next to the name.
 
 Once linked, the file is compared with Dataverse automatically — no manual refresh needed.
 When they differ, the resource is marked **M** in the modified colour, just like a changed

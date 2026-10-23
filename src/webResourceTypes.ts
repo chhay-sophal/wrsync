@@ -69,6 +69,11 @@ export function linkableExtensions(webresourcetype: number): string[] | null {
 	return LINKABLE_EXTENSIONS[webresourcetype] ?? null;
 }
 
+/** Whether the type's content is text, so it can be shown in an editor (View Content). */
+export function isTextType(webresourcetype: number): boolean {
+	return LINKABLE_EXTENSIONS[webresourcetype] !== undefined;
+}
+
 /** Whether a local file's extension matches the type - false for binary types, and for links
  * made before linking was restricted by type. */
 export function isLinkableFile(webresourcetype: number, localPath: string): boolean {
