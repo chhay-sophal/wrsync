@@ -2,7 +2,7 @@
   "name": "wrsync",
   "displayName": "Web Resource Sync",
   "description": "Edit Power Apps (Dataverse) web resources from local files, right inside VS Code",
-  "version": "0.0.2",
+  "version": "0.1.0",
   "publisher": "sophal-developer",
   "license": "MIT",
   "icon": "media/marketplace-icon.png",

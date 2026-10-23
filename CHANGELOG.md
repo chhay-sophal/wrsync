@@ -2,7 +2,20 @@
 
 All notable changes to the "wrsync" extension will be documented in this file.
 
-## [Unreleased]
+## [0.1.0]
+
+### Upgrading from 0.0.2
+
+- **The sidebar looks and works differently** - it's now a native tree, like Explorer. See
+  the README's usage guide for where everything moved.
+- **Pick your environment and solution again** once after upgrading: they're stored in a
+  new place. Filters from 0.0.2 don't carry over either. Your links to local files and your
+  sign-in are kept.
+- **Publish All is gone.** To publish everything that changed: Filter → **Show Modified
+  Only**, select all (<kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>A</kbd>), then **Publish
+  Selected**.
+
+### Changes
 
 - **The sidebar is now a native VS Code tree view** ("Web Resources") instead of a webview,
   so it behaves like Explorer: file icons from your icon theme, hovers that can extend past
