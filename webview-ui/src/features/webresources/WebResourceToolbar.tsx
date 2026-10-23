@@ -10,6 +10,7 @@ import {
   Radio,
   RadioGroup,
   Text,
+  Tooltip,
 } from "@fluentui/react-components";
 import { FilterRegular, SearchRegular } from "@fluentui/react-icons";
 import type { Filters, ManagedFilter, SortState } from "./filterUtils";
@@ -64,12 +65,13 @@ export function WebResourceToolbar({ filters, onFiltersChange, sort, onSortChang
       <div className="flex items-center gap-1">
         <Menu>
           <MenuTrigger disableButtonEnhancement>
-            <Button
-              size="small"
-              appearance={filtersActive ? "primary" : "secondary"}
-              icon={<FilterRegular />}
-              aria-label="Filter"
-            />
+            <Tooltip content={filtersActive ? "Filter (active)" : "Filter"} relationship="label" withArrow>
+              <Button
+                size="small"
+                appearance={filtersActive ? "primary" : "secondary"}
+                icon={<FilterRegular />}
+              />
+            </Tooltip>
           </MenuTrigger>
           <MenuPopover>
             <div className="flex min-w-[200px] flex-col gap-2 p-2">

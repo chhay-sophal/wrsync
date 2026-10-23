@@ -6,7 +6,9 @@ All notable changes to the "wrsync" extension will be documented in this file.
 
 - Publishing now asks for confirmation first, listing the resources and the target
   environment host before anything is overwritten.
-- Toolbar and card actions are now icon-only buttons with tooltips.
+- Toolbar and card actions are now icon-only buttons with tooltips that appear on hover
+  and keyboard focus and are read by screen readers; disabled buttons still show theirs.
+  The toolbar publish button shows the number of selected resources.
 - Removed the **Publish All** and **Clear filters** toolbar buttons; select cards and use
   the toolbar's publish button instead.
 - Unlinking a local file now asks for confirmation first.

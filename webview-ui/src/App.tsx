@@ -22,6 +22,7 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { getAuthStatus, login, logout } from "./api/auth";
 import type { DataverseEnvironment, Solution } from "./api/dataverse";
+import { IconButton } from "./components/IconButton";
 import { SettingsBarItem } from "./components/SettingsBarItem";
 import { EnvironmentPicker } from "./features/environments/EnvironmentPicker";
 import { SolutionPicker } from "./features/solutions/SolutionPicker";
@@ -100,21 +101,14 @@ function App({ isDark, onToggleTheme }: Props) {
             {username ?? "Not signed in"}
           </Text>
           <div className="flex shrink-0 items-center gap-1">
-            <Button
-              size="small"
+            <IconButton
               appearance="subtle"
               icon={isDark ? <WeatherSunnyRegular /> : <WeatherMoonRegular />}
               onClick={onToggleTheme}
-              title="Toggle theme"
+              label={isDark ? "Switch to light theme" : "Switch to dark theme"}
             />
             {username && (
-              <Button
-                size="small"
-                appearance="subtle"
-                icon={<SignOutRegular />}
-                onClick={handleSignOut}
-                title="Sign out"
-              />
+              <IconButton appearance="subtle" icon={<SignOutRegular />} onClick={handleSignOut} label="Sign out" />
             )}
           </div>
         </header>
@@ -219,30 +213,38 @@ function App({ isDark, onToggleTheme }: Props) {
         ) : environment && solution ? (
           <div className="flex min-h-0 flex-1 flex-col gap-2">
             <div className="flex flex-wrap gap-1">
-              <Button
-                size="small"
+              <IconButton
                 appearance="secondary"
                 icon={<AddRegular />}
                 onClick={() => webResourceListRef.current?.openCreateDialog()}
-                title="Create a new web resource"
+                label="Create a new web resource"
+                tooltipPosition="below"
               />
-              <Button
-                size="small"
+              <IconButton
                 appearance="secondary"
                 icon={<ArrowSyncRegular className={refreshing ? "motion-safe:animate-spin" : undefined} />}
                 onClick={() => webResourceListRef.current?.refreshAll()}
                 disabled={refreshing || publishing}
-                title="Refresh the list"
+                label={refreshing ? "Refreshing..." : "Refresh the list"}
+                tooltipPosition="below"
               />
               <div className="flex-1"></div>
-              <Button
-                size="small"
+              <IconButton
                 appearance="primary"
                 icon={<CloudArrowUpRegular />}
                 onClick={() => webResourceListRef.current?.publishSelected()}
                 disabled={selectedCount === 0 || publishing}
-                title={`Publish ${selectedCount} selected web resources`}
-              />
+                label={
+                  publishing
+                    ? "Publishing..."
+                    : selectedCount === 0
+                      ? "Select web resources to publish"
+                      : `Publish ${selectedCount} selected web resource${selectedCount === 1 ? "" : "s"}`
+                }
+                tooltipPosition="below"
+              >
+                {selectedCount > 0 ? selectedCount : undefined}
+              </IconButton>
             </div>
 
             <WebResourceList

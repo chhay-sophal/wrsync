@@ -1,8 +1,9 @@
-import { Button, Card, Checkbox, Text, tokens } from "@fluentui/react-components";
+import { Card, Checkbox, Text, tokens } from "@fluentui/react-components";
 import { InfoRegular } from "@fluentui/react-icons";
 import { memo } from "react";
 import type { WebResource } from "../../api/dataverse";
 import type { LocalFile, ResourceLink } from "../../api/local";
+import { IconButton } from "../../components/IconButton";
 import { LocalFileLink } from "./LocalFileLink";
 import { TYPE_LABELS } from "./webResourceTypes";
 
@@ -53,13 +54,12 @@ function WebResourceCardImpl({
             <Text weight="semibold" size={300} truncate wrap={false} title={r.name} className="min-w-0 flex-1">
               {r.name}
             </Text>
-            <Button
+            <IconButton
               shape="circular"
               appearance="subtle"
-              size="small"
               icon={<InfoRegular />}
               onClick={() => onShowDetails(r.webresourceid)}
-              aria-label={`View details for ${r.name}`}
+              label={`View details for ${r.name}`}
               className="shrink-0"
             />
           </div>

@@ -1,4 +1,4 @@
-import { Badge, Button, Combobox, Option, Text, tokens } from "@fluentui/react-components";
+import { Badge, Combobox, Option, Text, Tooltip, tokens } from "@fluentui/react-components";
 import { BranchCompareRegular, CloudArrowUpRegular, LinkDismissRegular } from "@fluentui/react-icons";
 import { useMemo, useState } from "react";
 import { openCompareDiff } from "../../api/compare";
@@ -6,6 +6,7 @@ import { publishWebResources, updateWebResourceContent } from "../../api/dataver
 import { createLink, deleteLink, getLocalFileContent, type LocalFile, type ResourceLink } from "../../api/local";
 import { utf8ToBase64 } from "../../lib/base64";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
+import { IconButton } from "../../components/IconButton";
 import { ConfirmPublishDialog } from "./ConfirmPublishDialog";
 import { isLinkableFile, linkableExtensions, TYPE_LABELS } from "./webResourceTypes";
 
@@ -137,27 +138,38 @@ export function LocalFileLink({
             </Text>
           )}
           <div className="flex flex-wrap items-center gap-1.5">
-            {isModified && !linkMismatched && <Badge color="warning" title="This web resource content on Dataverse is different from local code. Compare to see the difference.">Modified</Badge>}
             {isModified && !linkMismatched && (
-              <Button
-                size="small"
+              <Tooltip
+                content="The local file differs from what's in Dataverse. Compare to see the difference."
+                relationship="description"
+                withArrow
+              >
+                <Badge color="warning">Modified</Badge>
+              </Tooltip>
+            )}
+            {isModified && !linkMismatched && (
+              <IconButton
                 appearance="primary"
                 icon={<CloudArrowUpRegular />}
                 onClick={() => setConfirmingPublish(true)}
                 disabled={busy}
-                title="Publish this web resource"
+                label="Publish this web resource"
               />
             )}
             {isModified && !linkMismatched && (
-              <Button size="small" appearance="secondary" icon={<BranchCompareRegular />} onClick={handleCompare} title="Compare this web resource content from Dataverse against local code"/>
+              <IconButton
+                appearance="secondary"
+                icon={<BranchCompareRegular />}
+                onClick={handleCompare}
+                label="Compare Dataverse content with the local file"
+              />
             )}
-            <Button
-              size="small"
+            <IconButton
               appearance="subtle"
               icon={<LinkDismissRegular />}
               onClick={() => setConfirmingUnlink(true)}
               disabled={busy}
-              title="Unlink this web resource from local file"
+              label="Unlink the local file"
             />
           </div>
         </div>
