@@ -37,7 +37,7 @@ import {
   type SortColumn,
   type SortState,
 } from "./filterUtils";
-import { WebResourceCard } from "./WebResourceCard";
+import { WebResourceCard, type RowSelectModifiers } from "./WebResourceCard";
 import { WebResourceDetailsDialog } from "./WebResourceDetailsDialog";
 import { WebResourceToolbar } from "./WebResourceToolbar";
 import { isLinkableFile, linkableExtensions, TYPE_LABELS } from "./webResourceTypes";
@@ -364,14 +364,70 @@ export function WebResourceList({
     return list;
   }, [resources, filters, sort, modifiedStatus]);
 
-  const toggleSelected = useCallback((id: string) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
+  // Explorer-style selection. The anchor is the row of the last plain or toggle click; shift
+  // ranges run from it and leave it in place, so successive shift-clicks re-range from the same
+  // row. The callbacks read the displayed order through a ref so they stay stable and the
+  // memoized rows don't all re-render whenever the list changes.
+  const anchorIdRef = useRef<string | null>(null);
+  const displayedIdsRef = useRef<string[]>([]);
+  useEffect(() => {
+    displayedIdsRef.current = displayedResources.map((r) => r.webresourceid);
+  }, [displayedResources]);
+
+  const selectRow = useCallback((id: string, { toggle, range }: RowSelectModifiers) => {
+    const ids = displayedIdsRef.current;
+    const anchorIndex = anchorIdRef.current ? ids.indexOf(anchorIdRef.current) : -1;
+    if (range && anchorIndex !== -1) {
+      const index = ids.indexOf(id);
+      const rangeIds = ids.slice(Math.min(anchorIndex, index), Math.max(anchorIndex, index) + 1);
+      setSelectedIds((prev) => new Set(toggle ? [...prev, ...rangeIds] : rangeIds));
+      return;
+    }
+    anchorIdRef.current = id;
+    if (toggle) {
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        if (next.has(id)) next.delete(id);
+        else next.add(id);
+        return next;
+      });
+    } else {
+      setSelectedIds(new Set([id]));
+    }
   }, []);
+
+  /** Arrow keys: select the adjacent row (Shift extends the range) and move focus to it. */
+  const moveSelection = useCallback(
+    (fromId: string, delta: 1 | -1, extend: boolean) => {
+      const ids = displayedIdsRef.current;
+      const nextId = ids[ids.indexOf(fromId) + delta];
+      if (!nextId) return;
+      if (extend && !anchorIdRef.current) anchorIdRef.current = fromId;
+      selectRow(nextId, { toggle: false, range: extend });
+      document.querySelector<HTMLElement>(`[data-row-id="${nextId}"]`)?.focus();
+    },
+    [selectRow]
+  );
+
+  const selectAllDisplayed = useCallback(() => {
+    setSelectedIds(new Set(displayedIdsRef.current));
+  }, []);
+
+  // Ctrl/Cmd+A selects all web resources instead of the page's text, wherever focus is - a
+  // row, a row's button, or nowhere (e.g. after clicking back into the sidebar). Text fields
+  // (the search box) and open dialogs keep the normal select-all-text behaviour.
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key.toLowerCase() !== "a" || !(e.ctrlKey || e.metaKey) || e.shiftKey || e.altKey) return;
+      const target = e.target as HTMLElement | null;
+      if (target?.closest('input, textarea, [contenteditable="true"], [role="combobox"], [role="dialog"]')) return;
+      e.preventDefault();
+      window.getSelection()?.removeAllRanges();
+      selectAllDisplayed();
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectAllDisplayed]);
 
   const allDisplayedSelected =
     displayedResources.length > 0 && displayedResources.every((r) => selectedIds.has(r.webresourceid));
@@ -444,13 +500,14 @@ export function WebResourceList({
         label={`${displayedResources.length} resource(s)`}
       />
 
-      <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-auto">
+      <div className="flex min-h-0 flex-1 flex-col overflow-auto divide-y divide-gray-300 dark:divide-gray-700">
         {displayedResources.map((r) => (
           <WebResourceCard
             key={r.webresourceid}
             resource={r}
             isSelected={selectedIds.has(r.webresourceid)}
-            onToggleSelected={toggleSelected}
+            onSelect={selectRow}
+            onMoveSelection={moveSelection}
             onShowDetails={setDetailsId}
             orgApiUrl={orgApiUrl}
             environmentId={environmentId}

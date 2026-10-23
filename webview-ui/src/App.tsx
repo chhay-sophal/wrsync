@@ -57,7 +57,24 @@ function App({ isDark, onToggleTheme }: Props) {
   const [publishing, setPublishing] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const webResourceListRef = useRef<WebResourceListHandle>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
   const workspaceFiles = useWorkspaceFiles();
+
+  // Backstop for select-none below: VS Code's own "select all" (Ctrl+A) selects the whole
+  // webview document, and Chromium still paints that selection through text fields. Clear any
+  // selection that reaches into the sidebar unless the user is working in a text field.
+  // Dialogs render outside the sidebar, so selecting their text is unaffected.
+  useEffect(() => {
+    function handleSelectionChange() {
+      const selection = window.getSelection();
+      const root = rootRef.current;
+      if (!selection || selection.isCollapsed || !root) return;
+      if (document.activeElement?.closest("input, textarea")) return;
+      if (selection.getRangeAt(0).intersectsNode(root)) selection.removeAllRanges();
+    }
+    document.addEventListener("selectionchange", handleSelectionChange);
+    return () => document.removeEventListener("selectionchange", handleSelectionChange);
+  }, []);
 
   useEffect(() => {
     getAuthStatus()
@@ -89,7 +106,16 @@ function App({ isDark, onToggleTheme }: Props) {
   }
 
   return (
-    <div className="flex h-screen flex-col" style={{ background: tokens.colorNeutralBackground2 }}>
+    // select-none: like VS Code's Explorer, the sidebar's text isn't selectable. Inside VS Code,
+    // Ctrl+A also runs the editor's own "select all" in the webview, which the list's Ctrl+A
+    // handler can't cancel - with nothing selectable, it selects only the web resources. Text
+    // fields still work normally inside (Chromium keeps them selectable and editable), and
+    // dialogs render outside this element, so their text stays selectable.
+    <div
+      ref={rootRef}
+      className="flex h-screen select-none flex-col"
+      style={{ background: tokens.colorNeutralBackground2 }}
+    >
       <div>
         <header
           className="flex items-center justify-between gap-2 px-2 py-1"
@@ -176,7 +202,7 @@ function App({ isDark, onToggleTheme }: Props) {
         )}
       </div>
 
-      <main className="flex w-full flex-1 flex-col overflow-hidden p-2">
+      <main className="flex w-full flex-1 flex-col overflow-hidden">
         {checkingStatus ? (
           <div className="flex justify-center p-8">
             <Spinner label="Checking sign-in status..." />

@@ -10,11 +10,12 @@ import {
   tokens,
 } from "@fluentui/react-components";
 import { ArrowRightRegular, LinkMultipleRegular } from "@fluentui/react-icons";
-import { useEffect, useMemo, useState, type MouseEvent } from "react";
+import { useEffect, useMemo, useState } from "react";
 import vscodeApi from "../../vscodeApi";
 import { getWebResourceContent } from "../../api/dataverse";
 import { createLinks, getLocalFileContent } from "../../api/local";
 import { base64ToUtf8 } from "../../lib/base64";
+import { isRowClick } from "../../lib/rowClick";
 import { normalizeForCompare } from "../../lib/text";
 import { suggestLinks, type LinkSuggestion, type MatchKind, type SuggestionResource } from "./linkSuggestions";
 
@@ -58,17 +59,6 @@ async function runLimited(tasks: (() => Promise<void>)[], limit: number): Promis
     while (next < tasks.length) await tasks[next++]();
   }
   await Promise.all(Array.from({ length: Math.min(limit, tasks.length) }, worker));
-}
-
-/** Whether a click on a row should toggle its checkbox. Not when it hits a control with its
- * own behaviour (the checkbox, the file dropdown), nor when it comes from the dropdown's
- * options - Fluent renders those in a portal outside the row's DOM, but React still bubbles
- * their clicks up to the row - nor when it ends a text selection (copying a path). */
-function isRowToggleClick(e: MouseEvent<HTMLElement>): boolean {
-  const target = e.target as HTMLElement;
-  if (!e.currentTarget.contains(target)) return false;
-  if (target.closest('input, button, [role="combobox"]')) return false;
-  return !window.getSelection()?.toString();
 }
 
 function closePanel() {
@@ -245,7 +235,7 @@ function LinkSuggestionsReview({
                   <div
                     className="flex cursor-pointer flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2"
                     style={v.checked ? { background: tokens.colorNeutralBackground1Selected } : undefined}
-                    onClick={(e) => isRowToggleClick(e) && updateRow(id, base, { checked: !v.checked })}
+                    onClick={(e) => isRowClick(e) && updateRow(id, base, { checked: !v.checked })}
                   >
                     <Checkbox
                       checked={v.checked}
