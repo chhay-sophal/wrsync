@@ -52,9 +52,7 @@ function sortValue(r: WebResource, column: SortColumn): string {
 }
 
 export interface WebResourceListHandle {
-  clearAllFiltersAndSort: () => void;
-  /** Both ask for confirmation first; the publish itself runs once the user confirms. */
-  publishAll: () => void;
+  /** Asks for confirmation first; the publish itself runs once the user confirms. */
   publishSelected: () => void;
   openCreateDialog: () => void;
   refreshAll: () => Promise<void>;
@@ -68,10 +66,8 @@ interface Props {
   localFiles: LocalFile[];
   modifiedPaths: Set<string>;
   onFilePublished: (localPath: string) => void;
-  onActiveFilterOrSortChange?: (active: boolean) => void;
-  onModifiedCountChange?: (count: number) => void;
   onSelectedCountChange?: (count: number) => void;
-  onPublishingAllChange?: (publishing: boolean) => void;
+  onPublishingChange?: (publishing: boolean) => void;
   onRefreshingChange?: (refreshing: boolean) => void;
   ref?: Ref<WebResourceListHandle>;
 }
@@ -84,10 +80,8 @@ export function WebResourceList({
   localFiles,
   modifiedPaths,
   onFilePublished,
-  onActiveFilterOrSortChange,
-  onModifiedCountChange,
   onSelectedCountChange,
-  onPublishingAllChange,
+  onPublishingChange,
   onRefreshingChange,
   ref,
 }: Props) {
@@ -97,11 +91,11 @@ export function WebResourceList({
   const [sort, setSort] = useState<SortState>(null);
   const [links, setLinks] = useState<ResourceLink[]>([]);
   const [modifiedStatus, setModifiedStatus] = useState<Map<string, boolean>>(new Map());
-  const [publishAllError, setPublishAllError] = useState<string | null>(null);
+  const [publishError, setPublishError] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [detailsId, setDetailsId] = useState<string | null>(null);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [pendingPublish, setPendingPublish] = useState<{ ids: string[]; clearSelection: boolean } | null>(null);
+  const [pendingPublishIds, setPendingPublishIds] = useState<string[] | null>(null);
 
   const refreshLinks = useCallback(() => {
     listLinks().then(setLinks);
@@ -152,15 +146,6 @@ export function WebResourceList({
     [onFilePublished]
   );
 
-  const modifiedCount = useMemo(
-    () => [...modifiedStatus.values()].filter(Boolean).length,
-    [modifiedStatus]
-  );
-
-  useEffect(() => {
-    onModifiedCountChange?.(modifiedCount);
-  }, [modifiedCount, onModifiedCountChange]);
-
   useEffect(() => {
     onSelectedCountChange?.(selectedIds.size);
   }, [selectedIds, onSelectedCountChange]);
@@ -171,8 +156,8 @@ export function WebResourceList({
     if (webresourceIds.length === 0) return;
     const idSet = new Set(webresourceIds);
     const linked = links.filter((l) => idSet.has(l.webresourceId));
-    onPublishingAllChange?.(true);
-    setPublishAllError(null);
+    onPublishingChange?.(true);
+    setPublishError(null);
     try {
       const results = await Promise.allSettled(
         linked.map(async (link) => {
@@ -202,41 +187,36 @@ export function WebResourceList({
         succeededLinks.forEach((l) => onFilePublished(l.localPath));
       }
       if (failedNames.length > 0) {
-        setPublishAllError(`Failed to update: ${failedNames.join(", ")}`);
+        setPublishError(`Failed to update: ${failedNames.join(", ")}`);
       }
     } catch (err) {
-      setPublishAllError((err as Error).message);
+      setPublishError((err as Error).message);
     } finally {
-      onPublishingAllChange?.(false);
+      onPublishingChange?.(false);
     }
   }
 
-  function publishAll() {
-    const ids = links.filter((l) => modifiedStatus.get(l.webresourceId)).map((l) => l.webresourceId);
-    if (ids.length > 0) setPendingPublish({ ids, clearSelection: false });
-  }
-
   function publishSelected() {
-    if (selectedIds.size > 0) setPendingPublish({ ids: [...selectedIds], clearSelection: true });
+    if (selectedIds.size > 0) setPendingPublishIds([...selectedIds]);
   }
 
   async function confirmPublish() {
-    if (!pendingPublish) return;
-    const { ids, clearSelection } = pendingPublish;
-    setPendingPublish(null);
+    if (!pendingPublishIds) return;
+    const ids = pendingPublishIds;
+    setPendingPublishIds(null);
     await publishResources(ids);
-    if (clearSelection) setSelectedIds(new Set());
+    setSelectedIds(new Set());
   }
 
   const pendingPublishNames = useMemo(() => {
-    if (!pendingPublish) return null;
-    return pendingPublish.ids.map(
+    if (!pendingPublishIds) return null;
+    return pendingPublishIds.map(
       (id) =>
         resources?.find((r) => r.webresourceid === id)?.name ??
         links.find((l) => l.webresourceId === id)?.webresourceName ??
         id
     );
-  }, [pendingPublish, resources, links]);
+  }, [pendingPublishIds, resources, links]);
 
   // Persisted per-solution so switching solutions doesn't show another solution's filters,
   // but returning to one you've already filtered restores it. Read via a ref inside the
@@ -251,17 +231,6 @@ export function WebResourceList({
     persistedFiltersRef.current = persistedFilters;
   }, [persistedFilters]);
   const scopeKey = `${orgApiUrl}::${solutionId}`;
-
-  const hasActiveFilterOrSort =
-    sort !== null ||
-    filters.search !== "" ||
-    filters.types.size > 0 ||
-    filters.managed !== "all" ||
-    filters.modifiedOnly;
-
-  useEffect(() => {
-    onActiveFilterOrSortChange?.(hasActiveFilterOrSort);
-  }, [hasActiveFilterOrSort, onActiveFilterOrSortChange]);
 
   const refreshResources = useCallback(() => {
     return listWebResourcesForSolution(orgApiUrl, solutionId)
@@ -279,11 +248,6 @@ export function WebResourceList({
   }
 
   useImperativeHandle(ref, () => ({
-    clearAllFiltersAndSort: () => {
-      setFilters(EMPTY_FILTERS);
-      setSort(null);
-    },
-    publishAll,
     publishSelected,
     openCreateDialog: () => setCreateDialogOpen(true),
     refreshAll,
@@ -399,9 +363,9 @@ export function WebResourceList({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2">
-      {publishAllError && (
+      {publishError && (
         <Text block style={{ color: tokens.colorPaletteRedForeground1 }}>
-          {publishAllError}
+          {publishError}
         </Text>
       )}
 
@@ -446,7 +410,7 @@ export function WebResourceList({
         orgApiUrl={orgApiUrl}
         names={pendingPublishNames}
         onConfirm={confirmPublish}
-        onCancel={() => setPendingPublish(null)}
+        onCancel={() => setPendingPublishIds(null)}
       />
       {createDialog}
     </div>

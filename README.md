@@ -79,15 +79,14 @@ Dataverse's version block-by-block instead of publishing (overwrite) or discardi
 
 ### 7. Publish your changes
 
-- Click **Publish** on an individual card once it shows **Modified**.
-- Or select multiple cards (checkboxes) and click **Publish Selected** in the toolbar.
-- Or click **Publish All** to publish every modified, linked resource at once.
+- Click the publish (cloud) button on an individual card once it shows **Modified**.
+- Or select multiple cards (checkboxes) and click the publish button in the toolbar.
 
 Publishing uploads the linked file's current content and publishes it in one step.
 
 ### 8. Create a new web resource
 
-Click **Create** in the toolbar, fill in a name (e.g. `new_/scripts/myscript.js`),
+Click the **+** (Create) button in the toolbar, fill in a name (e.g. `new_/scripts/myscript.js`),
 display name, and type, then click **Create**. It's added to the current solution
 immediately, ready to be linked to a local file.
 

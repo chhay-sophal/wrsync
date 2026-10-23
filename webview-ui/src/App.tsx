@@ -51,10 +51,8 @@ function App({ isDark, onToggleTheme }: Props) {
   const [solution, setSolution] = usePersistedState<Solution | null>("wrsync.solution", null);
   const [environmentBarOpen, setEnvironmentBarOpen] = useState(false);
   const [solutionBarOpen, setSolutionBarOpen] = useState(false);
-  const [hasActiveWebResourceFilters, setHasActiveWebResourceFilters] = useState(false);
-  const [modifiedCount, setModifiedCount] = useState(0);
   const [selectedCount, setSelectedCount] = useState(0);
-  const [publishingAll, setPublishingAll] = useState(false);
+  const [publishing, setPublishing] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const webResourceListRef = useRef<WebResourceListHandle>(null);
   const workspaceFiles = useWorkspaceFiles();
@@ -83,7 +81,6 @@ function App({ isDark, onToggleTheme }: Props) {
     setUsername(null);
     setEnvironment(null);
     setSolution(null);
-    setModifiedCount(0);
     // Web resource filters persist across refreshes while signed in, but shouldn't outlive
     // the session (e.g. on a shared machine).
     localStorage.removeItem(FILTERS_STORAGE_KEY);
@@ -222,54 +219,30 @@ function App({ isDark, onToggleTheme }: Props) {
         ) : environment && solution ? (
           <div className="flex min-h-0 flex-1 flex-col gap-2">
             <div className="flex flex-wrap gap-1">
-              {selectedCount > 0 && (
-                <Button
-                  size="small"
-                  appearance="primary"
-                  icon={<CloudArrowUpRegular />}
-                  onClick={() => webResourceListRef.current?.publishSelected()}
-                  disabled={publishingAll}
-                >
-                  {publishingAll ? "Publishing..." : `Publish Selected (${selectedCount})`}
-                </Button>
-              )}
-              {modifiedCount > 0 && (
-                <Button
-                  size="small"
-                  appearance={selectedCount > 0 ? "secondary" : "primary"}
-                  icon={<CloudArrowUpRegular />}
-                  onClick={() => webResourceListRef.current?.publishAll()}
-                  disabled={publishingAll}
-                >
-                  {publishingAll ? "Publishing..." : `Publish All (${modifiedCount})`}
-                </Button>
-              )}
-              {hasActiveWebResourceFilters && (
-                <Button
-                  size="small"
-                  appearance="subtle"
-                  onClick={() => webResourceListRef.current?.clearAllFiltersAndSort()}
-                >
-                  Clear filters
-                </Button>
-              )}
               <Button
                 size="small"
                 appearance="secondary"
                 icon={<AddRegular />}
                 onClick={() => webResourceListRef.current?.openCreateDialog()}
-              >
-                Create
-              </Button>
+                title="Create a new web resource"
+              />
               <Button
                 size="small"
                 appearance="secondary"
-                icon={<ArrowSyncRegular />}
+                icon={<ArrowSyncRegular className={refreshing ? "motion-safe:animate-spin" : undefined} />}
                 onClick={() => webResourceListRef.current?.refreshAll()}
-                disabled={refreshing || publishingAll}
-              >
-                {refreshing ? "Refreshing..." : "Refresh"}
-              </Button>
+                disabled={refreshing || publishing}
+                title="Refresh the list"
+              />
+              <div className="flex-1"></div>
+              <Button
+                size="small"
+                appearance="primary"
+                icon={<CloudArrowUpRegular />}
+                onClick={() => webResourceListRef.current?.publishSelected()}
+                disabled={selectedCount === 0 || publishing}
+                title={`Publish ${selectedCount} selected web resources`}
+              />
             </div>
 
             <WebResourceList
@@ -281,10 +254,8 @@ function App({ isDark, onToggleTheme }: Props) {
               localFiles={workspaceFiles.files}
               modifiedPaths={workspaceFiles.modifiedPaths}
               onFilePublished={workspaceFiles.clearModified}
-              onActiveFilterOrSortChange={setHasActiveWebResourceFilters}
-              onModifiedCountChange={setModifiedCount}
               onSelectedCountChange={setSelectedCount}
-              onPublishingAllChange={setPublishingAll}
+              onPublishingChange={setPublishing}
               onRefreshingChange={setRefreshing}
             />
           </div>

@@ -4,8 +4,11 @@ All notable changes to the "wrsync" extension will be documented in this file.
 
 ## [Unreleased]
 
-- Publish, Publish Selected, and Publish All now ask for confirmation first, listing the
-  resources and the target environment host before anything is overwritten.
+- Publishing now asks for confirmation first, listing the resources and the target
+  environment host before anything is overwritten.
+- Toolbar and card actions are now icon-only buttons with tooltips.
+- Removed the **Publish All** and **Clear filters** toolbar buttons; select cards and use
+  the toolbar's publish button instead.
 - Unlinking a local file now asks for confirmation first.
 - The web resource details dialog now shows who last modified the resource in Dataverse.
 - Switching away from the wrsync sidebar and back no longer reloads the web resource list.

@@ -17,8 +17,8 @@ interface Props {
   localFiles: LocalFile[];
   link: ResourceLink | undefined;
   /** Whether the linked local file's content currently differs from what's published in
-   * Dataverse - computed by the parent, which needs this across all rows for a future
-   * "Publish All" action. */
+   * Dataverse - computed by the parent, which tracks it across all rows (e.g. for the
+   * "Modified only" filter). */
   isModified: boolean;
   onLinksChanged: () => void;
   onPublished: (webresourceId: string, localPath: string) => void;
@@ -117,7 +117,7 @@ export function LocalFileLink({
             {link.localPath}
           </Text>
           <div className="flex flex-wrap items-center gap-1.5">
-            {isModified && <Badge color="warning">Modified</Badge>}
+            {isModified && <Badge color="warning" title="This web resource content on Dataverse is different from local code. Compare to see the difference.">Modified</Badge>}
             {isModified && (
               <Button
                 size="small"
@@ -125,14 +125,11 @@ export function LocalFileLink({
                 icon={<CloudArrowUpRegular />}
                 onClick={() => setConfirmingPublish(true)}
                 disabled={busy}
-              >
-                Publish
-              </Button>
+                title="Publish this web resource"
+              />
             )}
             {isModified && (
-              <Button size="small" appearance="secondary" icon={<BranchCompareRegular />} onClick={handleCompare}>
-                Compare
-              </Button>
+              <Button size="small" appearance="secondary" icon={<BranchCompareRegular />} onClick={handleCompare} title="Compare this web resource content from Dataverse against local code"/>
             )}
             <Button
               size="small"
@@ -140,9 +137,8 @@ export function LocalFileLink({
               icon={<LinkDismissRegular />}
               onClick={() => setConfirmingUnlink(true)}
               disabled={busy}
-            >
-              Unlink
-            </Button>
+              title="Unlink this web resource from local file"
+            />
           </div>
         </div>
       ) : (
