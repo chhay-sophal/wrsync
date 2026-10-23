@@ -14,7 +14,7 @@ import {
 } from './dataverseClient';
 import { openLinkSuggestionsPanel, type LinkSuggestionsData } from './linkSuggestionsPanel';
 import { createLink, createLinks, deleteLink, listLinks, type ResourceLink } from './linksStore';
-import { scheduleModifiedCountRefresh } from './modifiedTracker';
+import { checkLinksModified, scheduleModifiedCountRefresh } from './modifiedTracker';
 import { getWorkspaceFileContent, listWorkspaceFiles, replaceWorkspaceFileContent } from './workspaceFiles';
 
 interface RpcRequest {
@@ -70,6 +70,8 @@ const handlers: Record<string, Handler> = {
 		scheduleModifiedCountRefresh();
 	},
 	'links.list': async () => listLinks(),
+	'links.checkModified': (params: { orgApiUrl: string; links: Pick<ResourceLink, 'webresourceId' | 'localPath'>[] }) =>
+		checkLinksModified(params.orgApiUrl, params.links),
 	'links.create': async (params: Omit<ResourceLink, 'id'>) => {
 		const link = await createLink(params);
 		scheduleModifiedCountRefresh();

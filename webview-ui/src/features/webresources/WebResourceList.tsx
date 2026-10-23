@@ -9,17 +9,21 @@ import {
   type Ref,
 } from "react";
 import {
-  getWebResourceContent,
   listWebResourcesForSolution,
   publishWebResources,
   updateWebResourceContent,
   type WebResource,
 } from "../../api/dataverse";
-import { getLocalFileContent, listLinks, type LocalFile, type ResourceLink } from "../../api/local";
+import {
+  checkLinksModified,
+  getLocalFileContent,
+  listLinks,
+  type LocalFile,
+  type ResourceLink,
+} from "../../api/local";
 import { openLinkSuggestions } from "../../api/ui";
 import { usePersistedState } from "../../hooks/usePersistedState";
-import { base64ToUtf8, utf8ToBase64 } from "../../lib/base64";
-import { normalizeForCompare } from "../../lib/text";
+import { utf8ToBase64 } from "../../lib/base64";
 import { ConfirmPublishDialog } from "./ConfirmPublishDialog";
 import { CreateWebResourceDialog } from "./CreateWebResourceDialog";
 import {
@@ -120,38 +124,37 @@ export function WebResourceList({
     return () => window.removeEventListener("message", handleMessage);
   }, [refreshLinks]);
 
-  const checkOneModified = useCallback(
-    async (link: ResourceLink) => {
+  /** Checks the given links in one RPC; the extension fetches their Dataverse content in
+   * batched requests and compares it with the local files. Links stored for other
+   * environments are skipped - they can't exist in this one. */
+  const checkModified = useCallback(
+    async (toCheck: ResourceLink[]) => {
+      const inEnvironment = toCheck.filter((l) => l.environmentId === environmentId);
+      if (inEnvironment.length === 0) return;
       try {
-        const [localContent, remoteBase64] = await Promise.all([
-          getLocalFileContent(link.localPath),
-          getWebResourceContent(orgApiUrl, link.webresourceId),
-        ]);
-        const modified = normalizeForCompare(localContent) !== normalizeForCompare(base64ToUtf8(remoteBase64));
-        setModifiedStatus((prev) => new Map(prev).set(link.webresourceId, modified));
+        const result = await checkLinksModified(orgApiUrl, inEnvironment);
+        setModifiedStatus((prev) => {
+          const next = new Map(prev);
+          for (const [id, modified] of Object.entries(result)) next.set(id, modified);
+          return next;
+        });
       } catch {
         // Transient fetch error — leave the previous known state alone rather than guess.
       }
     },
-    [orgApiUrl]
+    [orgApiUrl, environmentId]
   );
 
   // Full check whenever the linked-files list changes (initial load, solution switch, or a
   // link was just created/removed).
   useEffect(() => {
-    links.forEach((link) => {
-      checkOneModified(link);
-    });
-  }, [links, checkOneModified]);
+    checkModified(links);
+  }, [links, checkModified]);
 
   // Incremental re-check when a watched local file changes.
   useEffect(() => {
-    for (const link of links) {
-      if (modifiedPaths.has(link.localPath)) {
-        checkOneModified(link);
-      }
-    }
-  }, [modifiedPaths, links, checkOneModified]);
+    checkModified(links.filter((link) => modifiedPaths.has(link.localPath)));
+  }, [modifiedPaths, links, checkModified]);
 
   const handleCardSynced = useCallback(
     (webresourceId: string, localPath: string) => {

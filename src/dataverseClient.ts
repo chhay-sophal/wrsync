@@ -82,12 +82,15 @@ export interface WebResourceDetails extends WebResource {
   modifiedbyname: string | null;
 }
 
+/** `token` lets background callers pass one from getAccessTokenSilent(), so they never
+ * trigger the interactive sign-in that getAccessToken() falls back to. */
 async function callDataverse(
   orgApiUrl: string,
   path: string,
-  init: RequestInit = {}
+  init: RequestInit = {},
+  token?: string
 ): Promise<Response> {
-  const token = await getAccessToken(orgApiUrl);
+  token ??= await getAccessToken(orgApiUrl);
   const res = await fetch(`${orgApiUrl}/api/data/${API_VERSION}/${path}`, {
     ...init,
     headers: {
@@ -201,6 +204,34 @@ export async function getOthersChanges(orgApiUrl: string, webresourceIds: string
       modifiedbyname: r.modifiedby?.fullname ?? null,
       modifiedon: r.modifiedon,
     }));
+}
+
+/** IDs per batched request: each adds ~55 characters of $filter to the URL, so 50 keeps it
+ * comfortably within Dataverse's URL length limit. */
+const CONTENT_BATCH_SIZE = 50;
+
+/** Fetches the base64 content of many web resources in batched requests (one per
+ * CONTENT_BATCH_SIZE ids, run in parallel) instead of one request each. Keyed by lowercase
+ * webresourceid; an empty resource maps to "". */
+export async function getWebResourceContents(
+  orgApiUrl: string,
+  webresourceIds: string[],
+  token?: string
+): Promise<Map<string, string>> {
+  const batches: string[][] = [];
+  for (let i = 0; i < webresourceIds.length; i += CONTENT_BATCH_SIZE) {
+    batches.push(webresourceIds.slice(i, i + CONTENT_BATCH_SIZE));
+  }
+  const contents = new Map<string, string>();
+  await Promise.all(
+    batches.map(async (batch) => {
+      const filter = batch.map((id) => `webresourceid eq ${id}`).join(" or ");
+      const res = await callDataverse(orgApiUrl, `webresourceset?$select=webresourceid,content&$filter=${filter}`, {}, token);
+      const data = (await res.json()) as { value: { webresourceid: string; content: string | null }[] };
+      for (const r of data.value) {contents.set(r.webresourceid.toLowerCase(), r.content ?? "");}
+    })
+  );
+  return contents;
 }
 
 export async function getWebResourceContent(

@@ -15,6 +15,9 @@ All notable changes to the "wrsync" extension will be documented in this file.
   unlinked web resources by matching names, confirms candidates by comparing content, and
   links the rows you tick in one go. Ambiguous and name-only matches start unticked. The
   sidebar picks up links made there (or anywhere else) immediately.
+- Faster modified-check for large solutions: linked resources' Dataverse content is now
+  fetched in batched requests (up to 50 per request) instead of one request per resource,
+  for both the cards and the Activity Bar badge, which now share a single comparison.
 - Toolbar and card actions are now icon-only buttons with tooltips that appear on hover
   and keyboard focus and are read by screen readers; disabled buttons still show theirs.
   The toolbar publish button shows the number of selected resources.

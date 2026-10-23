@@ -26,6 +26,18 @@ export function createLink(link: Omit<ResourceLink, "id">): Promise<ResourceLink
   return callRpc<ResourceLink>("links.create", link);
 }
 
+/** Whether each link's local file differs from its Dataverse content, keyed by webresourceId.
+ * Links that couldn't be checked (e.g. unreadable file) are absent. */
+export function checkLinksModified(
+  orgApiUrl: string,
+  links: Pick<ResourceLink, "webresourceId" | "localPath">[]
+): Promise<Record<string, boolean>> {
+  return callRpc<Record<string, boolean>>("links.checkModified", {
+    orgApiUrl,
+    links: links.map(({ webresourceId, localPath }) => ({ webresourceId, localPath })),
+  });
+}
+
 export function createLinks(links: Omit<ResourceLink, "id">[]): Promise<ResourceLink[]> {
   return callRpc<ResourceLink[]>("links.createMany", { links });
 }
