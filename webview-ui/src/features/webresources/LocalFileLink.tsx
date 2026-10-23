@@ -7,6 +7,7 @@ import { createLink, deleteLink, getLocalFileContent, type LocalFile, type Resou
 import { utf8ToBase64 } from "../../lib/base64";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
 import { ConfirmPublishDialog } from "./ConfirmPublishDialog";
+import { isLinkableFile, linkableExtensions, TYPE_LABELS } from "./webResourceTypes";
 
 interface Props {
   orgApiUrl: string;
@@ -14,6 +15,7 @@ interface Props {
   solutionUniqueName: string;
   webresourceId: string;
   webresourceName: string;
+  webresourcetype: number;
   localFiles: LocalFile[];
   link: ResourceLink | undefined;
   /** Whether the linked local file's content currently differs from what's published in
@@ -30,6 +32,7 @@ export function LocalFileLink({
   solutionUniqueName,
   webresourceId,
   webresourceName,
+  webresourcetype,
   localFiles,
   link,
   isModified,
@@ -42,11 +45,22 @@ export function LocalFileLink({
   const [confirmingPublish, setConfirmingPublish] = useState(false);
   const [confirmingUnlink, setConfirmingUnlink] = useState(false);
 
+  const extensions = linkableExtensions(webresourcetype);
+  const typeLabel = TYPE_LABELS[webresourcetype] ?? `Type ${webresourcetype}`;
+  // Links made before linking was restricted by type can still point at the wrong kind of
+  // file; publishing one would overwrite the resource with mismatched content.
+  const linkMismatched = link !== undefined && !isLinkableFile(webresourcetype, link.localPath);
+
+  const matchingFiles = useMemo(
+    () => localFiles.filter((f) => isLinkableFile(webresourcetype, f.path)),
+    [localFiles, webresourcetype]
+  );
+
   const filteredFiles = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return localFiles;
-    return localFiles.filter((f) => f.path.toLowerCase().includes(q));
-  }, [localFiles, query]);
+    if (!q) return matchingFiles;
+    return matchingFiles.filter((f) => f.path.toLowerCase().includes(q));
+  }, [matchingFiles, query]);
 
   async function handleLink(localPath: string) {
     setBusy(true);
@@ -116,9 +130,15 @@ export function LocalFileLink({
           <Text size={200} title={link.localPath} className="min-w-0 truncate">
             {link.localPath}
           </Text>
+          {linkMismatched && (
+            <Text size={200} style={{ color: tokens.colorPaletteRedForeground1 }}>
+              This file type can't be published to a {typeLabel} web resource. Unlink it and link a{" "}
+              {extensions ? extensions.map((e) => `.${e}`).join(" / ") : "matching"} file instead.
+            </Text>
+          )}
           <div className="flex flex-wrap items-center gap-1.5">
-            {isModified && <Badge color="warning" title="This web resource content on Dataverse is different from local code. Compare to see the difference.">Modified</Badge>}
-            {isModified && (
+            {isModified && !linkMismatched && <Badge color="warning" title="This web resource content on Dataverse is different from local code. Compare to see the difference.">Modified</Badge>}
+            {isModified && !linkMismatched && (
               <Button
                 size="small"
                 appearance="primary"
@@ -128,7 +148,7 @@ export function LocalFileLink({
                 title="Publish this web resource"
               />
             )}
-            {isModified && (
+            {isModified && !linkMismatched && (
               <Button size="small" appearance="secondary" icon={<BranchCompareRegular />} onClick={handleCompare} title="Compare this web resource content from Dataverse against local code"/>
             )}
             <Button
@@ -141,10 +161,18 @@ export function LocalFileLink({
             />
           </div>
         </div>
+      ) : !extensions ? (
+        <Text size={200} style={{ color: tokens.colorNeutralForeground3 }}>
+          {typeLabel}: linking not supported
+        </Text>
       ) : (
         <Combobox
-          placeholder={localFiles.length === 0 ? "No local files found" : "Link a file..."}
-          disabled={busy || localFiles.length === 0}
+          placeholder={
+            matchingFiles.length === 0
+              ? `No ${extensions.map((e) => `.${e}`).join(" / ")} files found`
+              : "Link a file..."
+          }
+          disabled={busy || matchingFiles.length === 0}
           value={query}
           selectedOptions={[]}
           onOptionSelect={(_, data) => data.optionValue && handleLink(data.optionValue)}

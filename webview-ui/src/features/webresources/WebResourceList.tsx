@@ -35,7 +35,7 @@ import {
 import { WebResourceCard } from "./WebResourceCard";
 import { WebResourceDetailsDialog } from "./WebResourceDetailsDialog";
 import { WebResourceToolbar } from "./WebResourceToolbar";
-import { TYPE_LABELS } from "./webResourceTypes";
+import { isLinkableFile, TYPE_LABELS } from "./webResourceTypes";
 
 export { FILTERS_STORAGE_KEY };
 
@@ -153,12 +153,28 @@ export function WebResourceList({
 
   /** Updates local-linked content for the given resources (in parallel) and publishes
    * everything that either updated successfully or has no local link to update from. */
-  async function publishResources(webresourceIds: string[]) {
+  async function publishResources(requestedIds: string[]) {
+    if (requestedIds.length === 0) return;
+    // A link whose file type doesn't match its resource (made before linking was restricted
+    // by type) is left out entirely: uploading it would overwrite the resource with the wrong
+    // kind of content, and publishing it un-updated would be misleading.
+    const typeById = new Map((resources ?? []).map((r) => [r.webresourceid, r.webresourcetype]));
+    const mismatched = links.filter(
+      (l) =>
+        requestedIds.includes(l.webresourceId) &&
+        !isLinkableFile(typeById.get(l.webresourceId) ?? 0, l.localPath)
+    );
+    const mismatchedIds = new Set(mismatched.map((l) => l.webresourceId));
+    const skippedMessage =
+      mismatched.length > 0
+        ? `Skipped (linked file type doesn't match): ${mismatched.map((l) => l.webresourceName).join(", ")}`
+        : null;
+    const webresourceIds = requestedIds.filter((id) => !mismatchedIds.has(id));
+    setPublishError(skippedMessage);
     if (webresourceIds.length === 0) return;
     const idSet = new Set(webresourceIds);
     const linked = links.filter((l) => idSet.has(l.webresourceId));
     onPublishingChange?.(true);
-    setPublishError(null);
     try {
       const results = await Promise.allSettled(
         linked.map(async (link) => {
@@ -188,7 +204,9 @@ export function WebResourceList({
         succeededLinks.forEach((l) => onFilePublished(l.localPath));
       }
       if (failedNames.length > 0) {
-        setPublishError(`Failed to update: ${failedNames.join(", ")}`);
+        setPublishError(
+          [skippedMessage, `Failed to update: ${failedNames.join(", ")}`].filter(Boolean).join(". ")
+        );
       }
     } catch (err) {
       setPublishError((err as Error).message);

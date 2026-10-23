@@ -14,6 +14,10 @@ All notable changes to the "wrsync" extension will be documented in this file.
 - Switching away from the wrsync sidebar and back no longer reloads the web resource list.
 - Line-ending (CRLF vs LF) and UTF-8 BOM differences no longer mark a linked file as
   modified, and the Activity Bar badge count now agrees with the cards on BOM files.
+- The "Link a file" picker now only offers files matching the web resource's type (e.g.
+  `.js` for JavaScript). Binary types (PNG, JPG, GIF, ICO) show "linking not supported",
+  and existing links with a mismatched file type are flagged and can't be published.
+- XSL web resources can now be linked to local `.xsl` / `.xslt` files.
 
 ## [0.0.2]
 

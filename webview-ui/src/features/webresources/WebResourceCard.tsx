@@ -86,6 +86,7 @@ function WebResourceCardImpl({
           solutionUniqueName={solutionUniqueName}
           webresourceId={r.webresourceid}
           webresourceName={r.name}
+          webresourcetype={r.webresourcetype}
           localFiles={localFiles}
           link={link}
           isModified={isModified}

@@ -7,7 +7,8 @@ export interface LocalFile {
 	mtimeMs: number;
 }
 
-export const INCLUDE_GLOB = '**/*.{html,htm,js,css,xml,svg,resx}';
+// Keep in sync with LINKABLE_EXTENSIONS in webview-ui/src/features/webresources/webResourceTypes.ts.
+export const INCLUDE_GLOB = '**/*.{html,htm,js,css,xml,xsl,xslt,svg,resx}';
 const EXCLUDE_GLOB = '**/{node_modules,.git,dist,out}/**';
 const EXCLUDE_SEGMENTS = new Set(['node_modules', '.git', 'dist', 'out']);
 
