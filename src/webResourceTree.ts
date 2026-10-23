@@ -97,6 +97,7 @@ export class WebResourceTree
 				this.checkModified();
 			}),
 			onDidChangeRemoteContent(() => this.checkModified()),
+			this.view.onDidChangeSelection(() => this.updateSelectionContext()),
 			watchWorkspaceFiles((event) => {
 				const affected = listLinks().filter((l) => l.localPath === event.path);
 				if (affected.length > 0) {this.checkModified(affected);}
@@ -199,6 +200,24 @@ export class WebResourceTree
 		}
 		this.treeChanged.fire();
 		this.decorationsChanged.fire([...this.nodes.values()].map((n) => resourceUri(n.resource)));
+		this.updateSelectionContext();
+	}
+
+	/** The selected nodes as they are now. view.selection keeps the node objects from when they
+	 * were selected, so their Modified state can be stale after a re-check. */
+	currentSelection(): WebResourceNode[] {
+		return this.current(this.view.selection);
+	}
+
+	/** Maps nodes (e.g. passed to a command by a menu) to their current versions. */
+	current(nodes: readonly WebResourceNode[]): WebResourceNode[] {
+		return nodes.map((n) => this.nodes.get(n.resource.webresourceid) ?? n);
+	}
+
+	/** `wrsync.selectionHasSyncable` shows "Publish Selected" (title bar, context menu, Command
+	 * Palette) while the selection includes something publishable. */
+	private updateSelectionContext(): void {
+		vscode.commands.executeCommand('setContext', 'wrsync.selectionHasSyncable', this.currentSelection().some(canSync));
 	}
 
 	/** Nodes after the current filters and sort, in display order. */

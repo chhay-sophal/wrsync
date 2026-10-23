@@ -16,7 +16,8 @@ All notable changes to the "wrsync" extension will be documented in this file.
   are remembered per environment and solution.
 - Publishing asks for confirmation first, naming the target environment, and warns when a
   resource was last changed in Dataverse by someone else (with who and when), so you don't
-  silently overwrite a colleague's change. Select several resources to publish them together.
+  silently overwrite a colleague's change. Select several resources and use **Publish
+  Selected** (title bar or right-click) to publish them together.
 - Added **Pull**: replaces the linked local file with the current Dataverse content in one
   step (after a confirmation). Open editors update in place, the file keeps its line
   endings, and files with unsaved changes are left alone.

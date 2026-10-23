@@ -108,8 +108,10 @@ file is open with unsaved changes, Pull refuses until you save or discard them.
 ### 7. Publish your changes
 
 - Use the **publish** button on a modified web resource, or right-click → **Publish**.
-- To publish several, select them (<kbd>Ctrl</kbd>/<kbd>Shift</kbd>+click) and right-click →
-  **Publish**. Selected resources that aren't linked and modified are skipped.
+- To publish several, select them (<kbd>Ctrl</kbd>/<kbd>Shift</kbd>+click) and click
+  **Publish Selected** (cloud-upload button in the view's title bar), or right-click →
+  **Publish Selected**. The button appears while the selection includes a modified
+  resource; selected resources that aren't linked and modified are skipped.
 
 You're always asked to confirm, with the target environment named. If someone else changed a
 resource in Dataverse since, the confirmation says who and when, so you don't overwrite a

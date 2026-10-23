@@ -132,6 +132,12 @@
         "icon": "$(cloud-upload)"
       },
       {
+        "command": "wrsync.publishSelected",
+        "title": "Publish Selected",
+        "category": "Web Resource Sync",
+        "icon": "$(cloud-upload)"
+      },
+      {
         "command": "wrsync.pull",
         "title": "Pull (Replace Local File)",
         "category": "Web Resource Sync",
@@ -241,6 +247,11 @@
       ],
       "view/title": [
         {
+          "command": "wrsync.publishSelected",
+          "when": "view == wrsync.webResources && wrsync.signedIn && wrsync.hasSolution && wrsync.selectionHasSyncable",
+          "group": "navigation@0"
+        },
+        {
           "command": "wrsync.createWebResource",
           "when": "view == wrsync.webResources && wrsync.signedIn && wrsync.hasSolution",
           "group": "navigation@1"
@@ -292,6 +303,11 @@
         }
       ],
       "view/item/context": [
+        {
+          "command": "wrsync.publishSelected",
+          "when": "view == wrsync.webResources && listMultiSelection && wrsync.selectionHasSyncable",
+          "group": "1_sync@0"
+        },
         {
           "command": "wrsync.link",
           "when": "view == wrsync.webResources && viewItem =~ /;linkable;/",
@@ -436,6 +452,10 @@
         {
           "command": "wrsync.signInToTenant",
           "when": "!wrsync.signedIn"
+        },
+        {
+          "command": "wrsync.publishSelected",
+          "when": "wrsync.selectionHasSyncable"
         }
       ]
     },

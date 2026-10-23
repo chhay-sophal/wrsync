@@ -43,9 +43,15 @@ function guarded<A extends unknown[]>(title: string, body: (...args: A) => Promi
 /** Item commands get (clicked node, all selected nodes) from a tree menu, or nothing from the
  * Command Palette/keybinding - fall back to the tree's selection then. */
 function targets(tree: WebResourceTree, node?: WebResourceNode, selected?: WebResourceNode[]): WebResourceNode[] {
-	if (selected && selected.length > 0) {return selected;}
-	if (node) {return [node];}
-	return [...tree.view.selection];
+	if (selected && selected.length > 0) {return tree.current(selected);}
+	if (node) {return tree.current([node]);}
+	return tree.currentSelection();
+}
+
+/** The single item a command acts on: the clicked one, else the first selected - current
+ * version either way (menus can hand over node objects with stale state). */
+function one(tree: WebResourceTree, node?: WebResourceNode): WebResourceNode | undefined {
+	return targets(tree, node)[0];
 }
 
 function requireEnvironment() {
@@ -292,7 +298,7 @@ export function registerWebResourceCommands(context: vscode.ExtensionContext, tr
 	register(
 		'wrsync.link',
 		guarded('Link', async (node?: WebResourceNode) => {
-			const target = node ?? tree.view.selection[0];
+			const target = one(tree, node);
 			if (!target) {return;}
 			const environment = requireEnvironment();
 			const solution = getSolution();
@@ -329,34 +335,40 @@ export function registerWebResourceCommands(context: vscode.ExtensionContext, tr
 	register(
 		'wrsync.unlink',
 		guarded('Unlink', async (node?: WebResourceNode) => {
-			const link = (node ?? tree.view.selection[0])?.link;
+			const link = one(tree, node)?.link;
 			if (link) {await confirmAndUnlink(link);}
 		})
 	);
+	/** Publishes the publishable ones (linked, modified, matching type) and says how many of
+	 * the rest were skipped. */
+	const publish = async (all: WebResourceNode[]) => {
+		const environment = requireEnvironment();
+		const publishable = all.filter(canSync);
+		const skipped = all.length - publishable.length;
+		if (publishable.length === 0) {
+			vscode.window.showInformationMessage('Nothing to publish: the selected web resources are not linked, in sync, or linked to a mismatched file.');
+			return;
+		}
+		if (skipped > 0) {
+			vscode.window.showInformationMessage(`Skipping ${skipped} selected web resource(s) that are not linked, in sync, or mismatched.`);
+		}
+		await confirmAndPublish(
+			environment.apiUrl,
+			publishable.map((n) => ({ webresourceId: n.resource.webresourceid, name: n.resource.name, localPath: n.link!.localPath }))
+		);
+	};
+	// From an item's inline button or context menu (VS Code passes the whole selection when
+	// the clicked item is part of it), or the Command Palette.
 	register(
 		'wrsync.publish',
-		guarded('Publish', async (node?: WebResourceNode, selected?: WebResourceNode[]) => {
-			const environment = requireEnvironment();
-			const all = targets(tree, node, selected);
-			const publishable = all.filter(canSync);
-			const skipped = all.length - publishable.length;
-			if (publishable.length === 0) {
-				vscode.window.showInformationMessage('Nothing to publish: the selected web resources are not linked, in sync, or linked to a mismatched file.');
-				return;
-			}
-			if (skipped > 0) {
-				vscode.window.showInformationMessage(`Skipping ${skipped} selected web resource(s) that are not linked, in sync, or mismatched.`);
-			}
-			await confirmAndPublish(
-				environment.apiUrl,
-				publishable.map((n) => ({ webresourceId: n.resource.webresourceid, name: n.resource.name, localPath: n.link!.localPath }))
-			);
-		})
+		guarded('Publish', (node?: WebResourceNode, selected?: WebResourceNode[]) => publish(targets(tree, node, selected)))
 	);
+	// Title bar / context menu "Publish Selected": always the current selection.
+	register('wrsync.publishSelected', guarded('Publish', () => publish(tree.currentSelection())));
 	register(
 		'wrsync.pull',
 		guarded('Pull', async (node?: WebResourceNode) => {
-			const target = node ?? tree.view.selection[0];
+			const target = one(tree, node);
 			if (!target?.link || !canSync(target)) {return;}
 			await confirmAndPull(requireEnvironment().apiUrl, {
 				webresourceId: target.resource.webresourceid,
@@ -368,7 +380,7 @@ export function registerWebResourceCommands(context: vscode.ExtensionContext, tr
 	register(
 		'wrsync.compare',
 		guarded('Compare', async (node?: WebResourceNode) => {
-			const target = node ?? tree.view.selection[0];
+			const target = one(tree, node);
 			if (!target?.link) {return;}
 			await openCompareDiff({
 				orgApiUrl: requireEnvironment().apiUrl,
@@ -381,7 +393,7 @@ export function registerWebResourceCommands(context: vscode.ExtensionContext, tr
 	register(
 		'wrsync.openLocalFile',
 		guarded('Open local file', async (node?: WebResourceNode) => {
-			const target = node ?? tree.view.selection[0];
+			const target = one(tree, node);
 			const folder = vscode.workspace.workspaceFolders?.[0];
 			if (!target?.link || !folder) {return;}
 			await vscode.window.showTextDocument(vscode.Uri.joinPath(folder.uri, target.link.localPath), { preview: true });
@@ -390,7 +402,7 @@ export function registerWebResourceCommands(context: vscode.ExtensionContext, tr
 	register(
 		'wrsync.showDetails',
 		guarded('Show details', async (node?: WebResourceNode) => {
-			const target = node ?? tree.view.selection[0];
+			const target = one(tree, node);
 			if (!target) {return;}
 			const r = target.resource;
 			const details = await getWebResourceDetails(requireEnvironment().apiUrl, r.webresourceid).catch(() => undefined);
