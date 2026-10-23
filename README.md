@@ -18,6 +18,9 @@ sidebar view that works like VS Code's Explorer.
 - **Compare** with a diff editor, **pull** the Dataverse version, or **publish** a single
   resource, a selection, or the file you're editing — with a warning before you overwrite
   someone else's change.
+- **View** any web resource's Dataverse content read-only — text with syntax highlighting,
+  images and SVGs in VS Code's image preview, with thumbnails on hover. Managed web
+  resources are view-only.
 - **Create** new web resources directly from the sidebar.
 
 ## Requirements
@@ -52,7 +55,18 @@ later, use **Pick Solution...** or **Pick Environment...** from the view's **...
 
 ### 4. Browse, filter, and sort
 
-The view lists the solution's web resources, with file icons from your icon theme:
+The view lists the solution's web resources, with file icons from your icon theme (a name
+without an extension, like `sync_Lookup`, still gets the icon for its type). Clicking a web
+resource opens the most useful thing for it in a preview tab, while focus stays in the view
+so you can keep moving through the list:
+
+| Web resource | Click opens |
+| --- | --- |
+| Modified (**M**) | Compare: Dataverse ↔ local file |
+| Linked, in sync | The local file |
+| Not linked, or managed | Its Dataverse content, read-only (images and SVGs as a picture) |
+
+To move into the editor instead, use the same actions from the right-click menu.
 
 - **Hover** a web resource for its details: display name, type, managed state, linked file,
   sync status, and who last modified it in Dataverse. Images and SVGs also show a thumbnail.
@@ -89,7 +103,10 @@ linked. The linked path appears next to the name.
 
 Once linked, the file is compared with Dataverse automatically — no manual refresh needed.
 When they differ, the resource is marked **M** in the modified colour, just like a changed
-file in Explorer, and the Activity Bar icon shows a count of modified resources.
+file in Explorer, and the Activity Bar icon shows a count of modified resources. Line-ending
+(CRLF/LF) and UTF-8 BOM differences don't count as changes. A **!** marks a link made before
+type checks existed whose file type doesn't match; it can't be published until you unlink it
+and link a matching file.
 
 To link many at once, click **Suggest Links** (sparkle button). It matches unlinked web
 resources to unlinked local files by name — e.g. `new_/scripts/account.js` ↔
@@ -163,6 +180,8 @@ This produces a `.vsix` file in the project root. Install it via the Extensions 
 - Only the first open workspace folder is used as the source of local files.
 - No delete action for web resources (matching the original desktop app, which never
   exposed one either).
+- XAP (Silverlight) web resources can't be previewed. Image previews open a temporary copy
+  kept in the extension's own storage (cleared on every start), never in your workspace.
 
 ## Issues and feedback
 
@@ -174,10 +193,12 @@ Found a bug, or have a feature request? Please
 The extension is split into two parts:
 
 - **The extension host** (`src/`) — runs in Node, talks to Microsoft Entra ID (via
-  `@azure/msal-node`) and the Dataverse Web API, and hosts the sidebar webview.
-- **The webview UI** (`webview-ui/`) — a separate React + Vite + Fluent UI project. It
-  never calls `fetch()` directly; it talks to the extension host over `postMessage()`
-  through the RPC bridge in `src/rpc.ts` / `webview-ui/src/api/rpc.ts`.
+  `@azure/msal-node`) and the Dataverse Web API, and provides the native **Web Resources**
+  tree view, its commands, and the editors it opens.
+- **The webview UI** (`webview-ui/`) — a separate React + Vite + Fluent UI project, now used
+  only for the **Suggested links** editor tab. It never calls `fetch()` directly; it talks
+  to the extension host over `postMessage()` through the RPC bridge in `src/rpc.ts` /
+  `webview-ui/src/api/rpc.ts`.
 
 ### Setup
 
@@ -233,11 +254,15 @@ host — the same checks `npm run package` runs before packaging a `.vsix`.
 | `src/workspaceFiles.ts` / `src/fileWatcher.ts` | Listing and watching workspace files |
 | `src/linksStore.ts` | Web-resource ↔ local-file link storage |
 | `src/state.ts` | Selected environment/solution, filters and sort (per workspace) |
-| `src/webResourceTree.ts` | The native Web Resources tree: items, hovers, M decorations |
+| `src/webResourceTree.ts` | The native Web Resources tree: items, clicks, hovers and thumbnails, M decorations |
 | `src/webResourceCommands.ts` | Commands behind the tree's buttons, menus and pickers |
+| `src/webResourceTypes.ts` | Web resource types: labels, linkable extensions, icons, text/image |
 | `src/syncActions.ts` | Publish / pull / unlink flows with their confirmations |
 | `src/modifiedTracker.ts` | Batched local-vs-Dataverse comparison and the Activity Bar badge |
+| `src/compareProvider.ts` | Read-only Dataverse documents: Compare diffs and View Content |
+| `src/mediaProvider.ts` | Image and SVG previews (via temporary copies) |
 | `src/publishCurrentFile.ts` | "Publish This File" from the editor |
-| `src/linkSuggestionsPanel.ts` | Hosts the Suggested links webview tab |
+| `src/linkSuggestionsPanel.ts` / `src/webviewHtml.ts` | Host the Suggested links webview tab |
 | `src/rpc.ts` | Routes the Suggested links tab's calls to the functions above |
+| `src/devReload.ts` | Under F5, reloads the webview tab after each UI rebuild |
 | `webview-ui/src/features/webresources/` | The Suggested links page |
