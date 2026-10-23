@@ -16,6 +16,7 @@ import {
   type WebResource,
 } from "../../api/dataverse";
 import { getLocalFileContent, listLinks, type LocalFile, type ResourceLink } from "../../api/local";
+import { openLinkSuggestions } from "../../api/ui";
 import { usePersistedState } from "../../hooks/usePersistedState";
 import { base64ToUtf8, utf8ToBase64 } from "../../lib/base64";
 import { normalizeForCompare } from "../../lib/text";
@@ -35,7 +36,7 @@ import {
 import { WebResourceCard } from "./WebResourceCard";
 import { WebResourceDetailsDialog } from "./WebResourceDetailsDialog";
 import { WebResourceToolbar } from "./WebResourceToolbar";
-import { isLinkableFile, TYPE_LABELS } from "./webResourceTypes";
+import { isLinkableFile, linkableExtensions, TYPE_LABELS } from "./webResourceTypes";
 
 export { FILTERS_STORAGE_KEY };
 
@@ -56,6 +57,7 @@ export interface WebResourceListHandle {
   /** Asks for confirmation first; the publish itself runs once the user confirms. */
   publishSelected: () => void;
   openCreateDialog: () => void;
+  openLinkSuggestions: () => void;
   refreshAll: () => Promise<void>;
 }
 
@@ -64,6 +66,7 @@ interface Props {
   solutionId: string;
   environmentId: string;
   solutionUniqueName: string;
+  solutionName: string;
   localFiles: LocalFile[];
   modifiedPaths: Set<string>;
   onFilePublished: (localPath: string) => void;
@@ -78,6 +81,7 @@ export function WebResourceList({
   solutionId,
   environmentId,
   solutionUniqueName,
+  solutionName,
   localFiles,
   modifiedPaths,
   onFilePublished,
@@ -104,6 +108,16 @@ export function WebResourceList({
 
   useEffect(() => {
     refreshLinks();
+  }, [refreshLinks]);
+
+  // Links can change outside this view - e.g. from the "Suggested links" editor tab - and the
+  // extension announces it so the cards update without a manual refresh.
+  useEffect(() => {
+    function handleMessage(ev: MessageEvent) {
+      if ((ev.data as { type?: string })?.type === "linksChanged") refreshLinks();
+    }
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
   }, [refreshLinks]);
 
   const checkOneModified = useCallback(
@@ -270,6 +284,19 @@ export function WebResourceList({
   useImperativeHandle(ref, () => ({
     publishSelected,
     openCreateDialog: () => setCreateDialogOpen(true),
+    openLinkSuggestions: () => {
+      if (!resources) return;
+      openLinkSuggestions({
+        orgApiUrl,
+        environmentId,
+        solutionUniqueName,
+        solutionName,
+        resources: resources
+          .filter((r) => linkableExtensions(r.webresourcetype) && !links.some((l) => l.webresourceId === r.webresourceid))
+          .map(({ webresourceid, name, webresourcetype }) => ({ webresourceid, name, webresourcetype })),
+        filePaths: localFiles.map((f) => f.path).filter((path) => !links.some((l) => l.localPath === path)),
+      }).catch((err) => setPublishError((err as Error).message));
+    },
     refreshAll,
   }));
 

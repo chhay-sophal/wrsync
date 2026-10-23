@@ -68,6 +68,22 @@ linked, that file's content is compared against what's published in Dataverse
 automatically — no manual refresh needed. If they differ, a **Modified** badge appears
 as soon as you save the file.
 
+The picker only lists files matching the resource's type (e.g. `.js` for JavaScript).
+Image types (PNG, JPG, GIF, ICO) can't be linked.
+
+To link many at once, click the **Suggest links** button (linked-chain icon) in the
+toolbar. It matches unlinked web resources to unlinked local files by name — e.g.
+`new_/scripts/account.js` ↔ `src/scripts/account.js` — and confirms each candidate by
+comparing its content with Dataverse. The suggestions open in an editor tab, where there's
+room to review them; untick anything wrong:
+
+- **Identical content** — the file matches what's in Dataverse; ticked.
+- **Path match** — a unique match on the file name plus its folder(s); ticked.
+- **Name only** / **Ambiguous** — only the file name matches, or several files do;
+  unticked, and you pick the file from a dropdown.
+
+Only the ticked rows are linked. Nothing is published or changed.
+
 ### 6. Compare and resolve changes
 
 Click **Compare** on a card that shows **Modified** to open a VS Code diff editor tab

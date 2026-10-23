@@ -12,7 +12,8 @@ import {
 	publishWebResources,
 	updateWebResourceContent,
 } from './dataverseClient';
-import { createLink, deleteLink, listLinks, type ResourceLink } from './linksStore';
+import { openLinkSuggestionsPanel, type LinkSuggestionsData } from './linkSuggestionsPanel';
+import { createLink, createLinks, deleteLink, listLinks, type ResourceLink } from './linksStore';
 import { scheduleModifiedCountRefresh } from './modifiedTracker';
 import { getWorkspaceFileContent, listWorkspaceFiles, replaceWorkspaceFileContent } from './workspaceFiles';
 
@@ -74,10 +75,16 @@ const handlers: Record<string, Handler> = {
 		scheduleModifiedCountRefresh();
 		return link;
 	},
+	'links.createMany': async (params: { links: Omit<ResourceLink, 'id'>[] }) => {
+		const created = await createLinks(params.links);
+		scheduleModifiedCountRefresh();
+		return created;
+	},
 	'links.delete': async (params: { id: string }) => {
 		await deleteLink(params.id);
 		scheduleModifiedCountRefresh();
 	},
+	'ui.openLinkSuggestions': async (params: LinkSuggestionsData) => openLinkSuggestionsPanel(params),
 	'compare.openDiff': (params: { orgApiUrl: string; webresourceId: string; webresourceName: string; localPath: string }) =>
 		openCompareDiff(params),
 };

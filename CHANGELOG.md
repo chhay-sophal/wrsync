@@ -11,6 +11,10 @@ All notable changes to the "wrsync" extension will be documented in this file.
 - Added **Pull** on modified cards: replaces the linked local file with the current
   Dataverse content in one step (after a confirmation). Open editors update in place, the
   file keeps its line endings, and files with unsaved changes are left alone.
+- Added **Suggest links** to the toolbar: opens an editor tab proposing local files for
+  unlinked web resources by matching names, confirms candidates by comparing content, and
+  links the rows you tick in one go. Ambiguous and name-only matches start unticked. The
+  sidebar picks up links made there (or anywhere else) immediately.
 - Toolbar and card actions are now icon-only buttons with tooltips that appear on hover
   and keyboard focus and are read by screen readers; disabled buttons still show theirs.
   The toolbar publish button shows the number of selected resources.

@@ -26,6 +26,10 @@ export function createLink(link: Omit<ResourceLink, "id">): Promise<ResourceLink
   return callRpc<ResourceLink>("links.create", link);
 }
 
+export function createLinks(links: Omit<ResourceLink, "id">[]): Promise<ResourceLink[]> {
+  return callRpc<ResourceLink[]>("links.createMany", { links });
+}
+
 export function deleteLink(id: string): Promise<void> {
   return callRpc<void>("links.delete", { id });
 }

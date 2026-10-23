@@ -15,6 +15,7 @@ import {
   CloudArrowUpRegular,
   CloudRegular,
   FolderRegular,
+  LinkMultipleRegular,
   SignOutRegular,
   WeatherMoonRegular,
   WeatherSunnyRegular,
@@ -222,6 +223,13 @@ function App({ isDark, onToggleTheme }: Props) {
               />
               <IconButton
                 appearance="secondary"
+                icon={<LinkMultipleRegular />}
+                onClick={() => webResourceListRef.current?.openLinkSuggestions()}
+                label="Suggest links for unlinked web resources"
+                tooltipPosition="below"
+              />
+              <IconButton
+                appearance="secondary"
                 icon={<ArrowSyncRegular className={refreshing ? "motion-safe:animate-spin" : undefined} />}
                 onClick={() => webResourceListRef.current?.refreshAll()}
                 disabled={refreshing || publishing}
@@ -253,6 +261,7 @@ function App({ isDark, onToggleTheme }: Props) {
               solutionId={solution.solutionid}
               environmentId={environment.id}
               solutionUniqueName={solution.uniquename}
+              solutionName={solution.friendlyname}
               localFiles={workspaceFiles.files}
               modifiedPaths={workspaceFiles.modifiedPaths}
               onFilePublished={workspaceFiles.clearModified}

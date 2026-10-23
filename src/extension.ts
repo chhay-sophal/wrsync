@@ -7,6 +7,7 @@ import {
 	listSolutions,
 	listWebResourcesForSolution,
 } from './dataverseClient';
+import { initLinkSuggestionsPanel } from './linkSuggestionsPanel';
 import { initLinksStore } from './linksStore';
 import { initModifiedTracker } from './modifiedTracker';
 import { SidebarViewProvider } from './sidebarView';
@@ -16,6 +17,7 @@ export function activate(context: vscode.ExtensionContext) {
 	initLinksStore(context);
 	initCompareProvider(context);
 	initModifiedTracker(context);
+	initLinkSuggestionsPanel(context);
 
 	context.subscriptions.push(
 		vscode.window.registerWebviewViewProvider('wrsync.sidebar', new SidebarViewProvider(context.extensionUri), {

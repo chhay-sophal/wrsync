@@ -1,6 +1,11 @@
 import { FluentProvider, webDarkTheme, webLightTheme } from "@fluentui/react-components";
 import { useEffect, useState } from "react";
 import App from "./App";
+import { LinkSuggestionsPage } from "./features/webresources/LinkSuggestionsPage";
+
+/** Which page this webview shows: the extension sets data-view on #root for editor-tab
+ * pages (see getHtml in src/sidebarView.ts); the sidebar app has none. */
+const view = document.getElementById("root")?.dataset.view;
 
 function prefersDark() {
   return window.matchMedia?.("(prefers-color-scheme: dark)").matches ?? false;
@@ -24,7 +29,11 @@ export function Root() {
 
   return (
     <FluentProvider theme={isDark ? webDarkTheme : webLightTheme}>
-      <App isDark={isDark} onToggleTheme={() => setIsDark((d) => !d)} />
+      {view === "linkSuggestions" ? (
+        <LinkSuggestionsPage />
+      ) : (
+        <App isDark={isDark} onToggleTheme={() => setIsDark((d) => !d)} />
+      )}
     </FluentProvider>
   );
 }

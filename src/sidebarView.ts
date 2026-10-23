@@ -1,6 +1,7 @@
 import * as fs from 'node:fs';
 import * as vscode from 'vscode';
 import { watchWorkspaceFiles } from './fileWatcher';
+import { onDidChangeLinks } from './linksStore';
 import { scheduleModifiedCountRefresh, setBadgeTarget } from './modifiedTracker';
 import { dispatchRpc } from './rpc';
 
@@ -23,6 +24,11 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
 		const watcher = watchWorkspaceFiles((event) => {
 			webviewView.webview.postMessage({ type: 'fileEvent', event });
 		});
+		// Links can also change from the "Suggested links" editor tab; tell the sidebar so its
+		// cards pick them up without a manual refresh.
+		const linksSubscription = onDidChangeLinks(() => {
+			webviewView.webview.postMessage({ type: 'linksChanged' });
+		});
 
 		webviewView.webview.onDidReceiveMessage((message: { type: string; id?: string; method?: string; params?: unknown }) => {
 			if (message.type === 'rpc') {
@@ -38,6 +44,7 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
 
 		webviewView.onDidDispose(() => {
 			watcher.dispose();
+			linksSubscription.dispose();
 			setBadgeTarget(undefined);
 		});
 	}
@@ -46,8 +53,10 @@ export class SidebarViewProvider implements vscode.WebviewViewProvider {
 /** Loads the built webview-ui/dist/index.html, rewrites its relative asset references
  * into webview.asWebviewUri() URIs, and injects a CSP restricting content to that dist
  * folder plus inline styles (Vite's built CSS is linked, not inlined, but React itself
- * sets inline style attributes at runtime). */
-function getHtml(webview: vscode.Webview, webviewUiDist: vscode.Uri): string {
+ * sets inline style attributes at runtime). `view` picks which page the shared bundle
+ * renders (see webview-ui/src/Root.tsx) - set as a data attribute, since the CSP rules out
+ * an inline script. Omitted for the sidebar app. */
+export function getHtml(webview: vscode.Webview, webviewUiDist: vscode.Uri, view?: string): string {
 	const indexPath = vscode.Uri.joinPath(webviewUiDist, 'index.html').fsPath;
 	let html = fs.readFileSync(indexPath, 'utf-8');
 
@@ -65,6 +74,9 @@ function getHtml(webview: vscode.Webview, webviewUiDist: vscode.Uri): string {
 	].join('; ');
 
 	html = html.replace('<head>', `<head>\n\t<meta http-equiv="Content-Security-Policy" content="${csp}" />`);
+	if (view) {
+		html = html.replace('<div id="root">', `<div id="root" data-view="${view}">`);
+	}
 
 	return html;
 }
