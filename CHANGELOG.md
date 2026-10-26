@@ -2,6 +2,17 @@
 
 All notable changes to the "wrsync" extension will be documented in this file.
 
+## [0.1.1]
+
+- **Suggest Links finds files by content, whatever their names**: it compares every unlinked
+  web resource with every unlinked local file of a matching type, so renamed or moved
+  identical copies are matched with certainty; the rest are still matched by name. Very
+  short content and files over 1 MB are left to name matching.
+- Suggest Links is faster: the content comparison runs in the extension in one batched pass
+  instead of one request per candidate file.
+- Each suggestion has a **Compare** button that opens a read-only diff of the Dataverse
+  content and the chosen file beside the list.
+
 ## [0.1.0]
 
 ### Upgrading from 0.0.2

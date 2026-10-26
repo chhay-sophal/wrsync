@@ -4,6 +4,7 @@ import { getWebResourceContents, toApiUrl } from './dataverseClient';
 import { watchWorkspaceFiles } from './fileWatcher';
 import { listLinks, onDidChangeLinks, type ResourceLink } from './linksStore';
 import { getEnvironment } from './state';
+import { normalizeForCompare } from './textCompare';
 
 /** Saves of the same file within this window (e.g. auto-save while typing) are checked once. */
 const FILE_DEBOUNCE_MS = 300;
@@ -220,15 +221,6 @@ async function checkLinksModified(
 		})
 	);
 	return result;
-}
-
-/** Ignores CRLF vs LF line endings and a leading UTF-8 BOM when comparing, so a Windows
- * checkout (core.autocrlf) of content saved elsewhere with LF isn't counted as modified.
- * Keep in sync with normalizeForCompare in webview-ui/src/lib/text.ts, which the "Suggested
- * links" page uses to confirm candidates by content. */
-function normalizeForCompare(text: string): string {
-	const withoutBom = text.charCodeAt(0) === 0xfeff ? text.slice(1) : text;
-	return withoutBom.replace(/\r\n?/g, '\n');
 }
 
 function changed(): void {

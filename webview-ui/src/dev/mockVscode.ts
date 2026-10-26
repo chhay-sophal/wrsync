@@ -15,7 +15,8 @@
  *   wrsyncMock.createdLinks  links the page created so far
  */
 import type { ResourceLink } from "../api/local";
-import { utf8ToBase64 } from "../lib/base64";
+import type { ContentMatches } from "../features/webresources/linkSuggestions";
+import { isLinkableFile } from "../features/webresources/webResourceTypes";
 
 const params = new URLSearchParams(location.search);
 const LATENCY_MS = Number(params.get("latency") ?? 300);
@@ -35,25 +36,30 @@ const resource = (name: string, webresourcetype: number, content: string): MockR
   content,
 });
 
-/** Unlinked resources covering each suggestion outcome: identical content, path match,
- * flat name with publisher prefix, ambiguous candidates, and no match at all. */
+const ACCOUNT = "// account form\nfunction onLoad(context) { return context; }\n";
+const SHARED = "/* shared helper copied into two resources */\nexport const helper = () => 1;\n";
+
+/** Unlinked resources covering each suggestion outcome. */
 const resources: MockResource[] = [
-  resource("new_/scripts/account.js", 3, "// account form\n"),
-  resource("new_/scripts/utils.js", 3, "export const x = 1;\n"),
-  resource("contoso_account_form.js", 3, "// account form (flat name)\n"),
-  resource("new_/styles/site.css", 2, "body { color: black; }\n"),
-  resource("new_/pages/dashboard.html", 1, "<h1>Dashboard</h1>\n"),
-  resource("new_/scripts/orphan.js", 3, "// no local file\n"),
+  resource("new_/scripts/account.js", 3, ACCOUNT), // identical + path match
+  resource("new_/scripts/utils.js", 3, "export const x = 1; // the published version\n"), // identical among 2 name candidates
+  resource("contoso_ribbon_commands.js", 3, "// ribbon commands\nfunction enableButton() { return true; }\n"), // identical, but renamed locally
+  resource("new_/styles/site.css", 2, "body { color: black; } /* published */\n"), // name match only (edited locally)
+  resource("new_/a/helper.js", 3, SHARED), // content shared by two resources
+  resource("new_/b/helper.js", 3, SHARED),
+  resource("new_/scripts/stub.js", 3, "// todo\n"), // trivial content - left to name matching
+  resource("new_/scripts/orphan.js", 3, "// no local file anywhere\nfunction nothing() {}\n"), // no match
 ];
 const byName = (name: string) => resources.find((r) => r.name === name)!;
 
 const localFiles = new Map<string, string>([
-  ["src/scripts/account.js", byName("new_/scripts/account.js").content],
-  ["src/scripts/utils.js", "export const x = 0;\n"],
+  ["src/scripts/account.js", ACCOUNT.replace(/\n/g, "\r\n")], // CRLF only - still identical
+  ["src/scripts/utils.js", "export const x = 0; // edited locally\n"],
   ["lib/scripts/utils.js", byName("new_/scripts/utils.js").content],
-  ["forms/account_form.js", byName("contoso_account_form.js").content],
-  ["src/styles/site.css", "body { color: navy; }\n"],
-  ["src/pages/dashboard.html", byName("new_/pages/dashboard.html").content],
+  ["ribbon/commandBar.js", byName("contoso_ribbon_commands.js").content],
+  ["src/styles/site.css", "body { color: navy; } /* edited locally */\n"],
+  ["src/a/helper.js", SHARED],
+  ["src/scripts/stub.js", "// todo\n"],
 ]);
 
 const createdLinks: ResourceLink[] = [];
@@ -63,18 +69,36 @@ function post(message: unknown) {
   window.postMessage(message, "*");
 }
 
+/** Same rules as src/linkSuggestionContent.ts: normalized content (line endings, BOM), trivial
+ * content ignored, shared content flagged, only files of a matching type. */
+function findIdenticalContent(p: { resources: { webresourceid: string; webresourcetype: number }[]; filePaths: string[] }): ContentMatches {
+  const normalize = (text: string) => (text.charCodeAt(0) === 0xfeff ? text.slice(1) : text).replace(/\r\n?/g, "\n");
+  const key = (text: string) => (normalize(text).trim().length < 20 ? undefined : normalize(text));
+  const contentOf = new Map(resources.map((r) => [r.webresourceid, r.content]));
+  const byKey = new Map<string, typeof p.resources>();
+  for (const r of p.resources) {
+    const k = key(contentOf.get(r.webresourceid) ?? "");
+    if (k) byKey.set(k, [...(byKey.get(k) ?? []), r]);
+  }
+  const identical: Record<string, string[]> = {};
+  const shared: string[] = [];
+  for (const [k, group] of byKey) {
+    const files = p.filePaths.filter((path) => localFiles.has(path) && key(localFiles.get(path)!) === k);
+    for (const r of group) {
+      const matching = files.filter((path) => isLinkableFile(r.webresourcetype, path)).sort();
+      if (matching.length > 0) identical[r.webresourceid] = matching;
+      if (group.length > 1) shared.push(r.webresourceid);
+    }
+  }
+  return { identical, shared };
+}
+
 // RPC params arrive as untyped JSON from the page, same as in the real extension.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const handlers: Record<string, (params: any) => unknown> = {
-  "dataverse.getWebResourceContent": (p: { webresourceId: string }) => {
-    const r = resources.find((x) => x.webresourceid === p.webresourceId);
-    if (!r) throw new Error(`Mock: no web resource ${p.webresourceId}`);
-    return utf8ToBase64(r.content);
-  },
-  "workspace.getFileContent": (p: { path: string }) => {
-    const content = localFiles.get(p.path);
-    if (content === undefined) throw new Error(`Mock: no local file ${p.path}`);
-    return content;
+  "suggestions.findIdenticalContent": findIdenticalContent,
+  "compare.openDiff": (p: { webresourceName: string; localPath: string }) => {
+    console.info(`[wrsync mock] Would open a diff beside this tab: ${p.webresourceName} <-> ${p.localPath}`);
   },
   "links.createMany": (p: { links: Omit<ResourceLink, "id">[] }) => {
     const created = p.links.map((l, i) => ({ id: `link-${Date.now()}-${i}`, ...l }));

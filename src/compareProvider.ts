@@ -38,13 +38,29 @@ async function loadRemoteDocument(params: RemoteResource): Promise<vscode.Uri> {
 	const remoteText = Buffer.from(base64Content, 'base64').toString('utf-8');
 
 	const fileName = nameWithTypeExtension(params.webresourceName, params.webresourcetype);
-	const remoteUri = vscode.Uri.parse(`${SCHEME}:/${encodeURIComponent(fileName)}?${params.webresourceId}`);
-	const changed = contentStore.has(remoteUri.toString());
-	contentStore.set(remoteUri.toString(), remoteText);
-	if (changed) {
-		onDidChangeEmitter.fire(remoteUri);
+	return setVirtualDocument(vscode.Uri.parse(`${SCHEME}:/${encodeURIComponent(fileName)}?${params.webresourceId}`), remoteText);
+}
+
+/** Stores text for a read-only virtual document and returns its URI; an open copy refreshes. */
+function setVirtualDocument(uri: vscode.Uri, text: string): vscode.Uri {
+	const existed = contentStore.has(uri.toString());
+	contentStore.set(uri.toString(), text);
+	if (existed) {
+		onDidChangeEmitter.fire(uri);
 	}
-	return remoteUri;
+	return uri;
+}
+
+/** A read-only snapshot of a local file, for diffs where the file mustn't be edited (Suggested
+ * links: it isn't linked yet, you're only judging whether it's the right match). The path keeps
+ * the file's extension for highlighting; the "local" query keeps it apart from Dataverse
+ * documents. Reflects the file when Compare was clicked - clicking again refreshes it. */
+async function loadLocalSnapshot(folder: vscode.WorkspaceFolder, localPath: string): Promise<vscode.Uri> {
+	const bytes = await vscode.workspace.fs.readFile(vscode.Uri.joinPath(folder.uri, localPath));
+	return setVirtualDocument(
+		vscode.Uri.parse(`${SCHEME}:/${encodeURIComponent(localPath)}?local`),
+		Buffer.from(bytes).toString('utf-8')
+	);
 }
 
 function showOptions(preserveFocus: boolean | undefined): vscode.TextDocumentShowOptions | undefined {
@@ -58,21 +74,30 @@ export async function openCompareDiff(
 		localPath: string;
 		/** Open as a preview tab and leave focus where it is (e.g. on the clicked tree item). */
 		preserveFocus?: boolean;
+		/** Where to open it, e.g. Beside to keep the Suggested links tab in view. Default: the
+		 * active editor group. */
+		viewColumn?: vscode.ViewColumn;
+		/** Show a read-only snapshot of the local file instead of the file itself, so neither
+		 * side can be edited. Off by default: the Web Resources view's Compare keeps the local
+		 * side editable, so changed blocks can be copied over from Dataverse. */
+		localReadOnly?: boolean;
 	}
 ): Promise<void> {
 	const folder = vscode.workspace.workspaceFolders?.[0];
 	if (!folder) {
 		throw new Error('No workspace folder is open');
 	}
-	const remoteUri = await loadRemoteDocument(params);
-	const localUri = vscode.Uri.joinPath(folder.uri, params.localPath);
-	await vscode.commands.executeCommand(
-		'vscode.diff',
-		remoteUri,
-		localUri,
-		`${params.webresourceName} (Dataverse ↔ Local)`,
-		showOptions(params.preserveFocus)
-	);
+	const [remoteUri, localUri] = await Promise.all([
+		loadRemoteDocument(params),
+		params.localReadOnly ? loadLocalSnapshot(folder, params.localPath) : vscode.Uri.joinPath(folder.uri, params.localPath),
+	]);
+	const title = params.localReadOnly
+		? `${params.webresourceName} ↔ ${params.localPath} (read-only)`
+		: `${params.webresourceName} (Dataverse ↔ Local)`;
+	await vscode.commands.executeCommand('vscode.diff', remoteUri, localUri, title, {
+		...showOptions(params.preserveFocus),
+		viewColumn: params.viewColumn,
+	});
 }
 
 /** Opens the web resource's current Dataverse content in a read-only editor tab - for managed
