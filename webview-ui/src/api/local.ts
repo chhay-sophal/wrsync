@@ -21,6 +21,18 @@ export function findIdenticalContent(params: {
   return callRpc<ContentMatches>("suggestions.findIdenticalContent", params);
 }
 
+/** Opens VS Code's diff of the web resource's Dataverse content and a local file, beside the
+ * Suggested links tab. */
+export function openCompareDiff(params: {
+  orgApiUrl: string;
+  webresourceId: string;
+  webresourceName: string;
+  webresourcetype: number;
+  localPath: string;
+}): Promise<void> {
+  return callRpc<void>("compare.openDiff", params);
+}
+
 export function createLinks(links: Omit<ResourceLink, "id">[]): Promise<ResourceLink[]> {
   return callRpc<ResourceLink[]>("links.createMany", { links });
 }

@@ -97,6 +97,9 @@ function findIdenticalContent(p: { resources: { webresourceid: string; webresour
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const handlers: Record<string, (params: any) => unknown> = {
   "suggestions.findIdenticalContent": findIdenticalContent,
+  "compare.openDiff": (p: { webresourceName: string; localPath: string }) => {
+    console.info(`[wrsync mock] Would open a diff beside this tab: ${p.webresourceName} <-> ${p.localPath}`);
+  },
   "links.createMany": (p: { links: Omit<ResourceLink, "id">[] }) => {
     const created = p.links.map((l, i) => ({ id: `link-${Date.now()}-${i}`, ...l }));
     createdLinks.push(...created);

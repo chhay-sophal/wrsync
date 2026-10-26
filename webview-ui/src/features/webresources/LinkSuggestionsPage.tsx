@@ -7,12 +7,13 @@ import {
   Option,
   Spinner,
   Text,
+  Tooltip,
   tokens,
 } from "@fluentui/react-components";
-import { ArrowRightRegular, LinkMultipleRegular } from "@fluentui/react-icons";
+import { ArrowRightRegular, BranchCompareRegular, LinkMultipleRegular } from "@fluentui/react-icons";
 import { useEffect, useMemo, useState } from "react";
 import vscodeApi from "../../vscodeApi";
-import { createLinks, findIdenticalContent } from "../../api/local";
+import { createLinks, findIdenticalContent, openCompareDiff } from "../../api/local";
 import { isRowClick } from "../../lib/rowClick";
 import {
   matchKindOf,
@@ -142,6 +143,22 @@ function LinkSuggestionsReview({
     setRows((prev) => new Map(prev).set(id, { ...base, ...prev.get(id), ...patch }));
   }
 
+  /** Opens a diff of the Dataverse content and the chosen candidate beside this tab. */
+  async function handleCompare(resource: SuggestionResource, path: string) {
+    setError(null);
+    try {
+      await openCompareDiff({
+        orgApiUrl,
+        webresourceId: resource.webresourceid,
+        webresourceName: resource.name,
+        webresourcetype: resource.webresourcetype,
+        localPath: path,
+      });
+    } catch (err) {
+      setError(`Couldn't compare ${path}: ${(err as Error).message}`);
+    }
+  }
+
   async function handleLink() {
     setLinking(true);
     setError(null);
@@ -245,6 +262,14 @@ function LinkSuggestionsReview({
                         </Text>
                       )}
                     </div>
+                    <Tooltip content={`Compare ${v.path} with the Dataverse content`} relationship="label" withArrow>
+                      <Button
+                        size="small"
+                        appearance="subtle"
+                        icon={<BranchCompareRegular />}
+                        onClick={() => handleCompare(v.suggestion.resource, v.path)}
+                      />
+                    </Tooltip>
                     <div className="flex w-[13rem] flex-wrap items-center gap-1">
                       <Badge size="small" color={badge.color}>
                         {badge.label}

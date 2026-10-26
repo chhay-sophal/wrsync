@@ -2,6 +2,17 @@
 
 All notable changes to the "wrsync" extension will be documented in this file.
 
+## [Unreleased]
+
+- **Suggest Links finds files by content, whatever their names**: it compares every unlinked
+  web resource with every unlinked local file of a matching type, so renamed or moved
+  identical copies are matched with certainty; the rest are still matched by name. Very
+  short content and files over 1 MB are left to name matching.
+- Suggest Links is faster: the content comparison runs in the extension in one batched pass
+  instead of one request per candidate file.
+- Each suggestion has a **Compare** button that opens a read-only diff of the Dataverse
+  content and the chosen file beside the list.
+
 ## [0.1.0]
 
 ### Upgrading from 0.0.2
@@ -46,9 +57,8 @@ All notable changes to the "wrsync" extension will be documented in this file.
   step (after a confirmation). Open editors update in place, the file keeps its line
   endings, and files with unsaved changes are left alone.
 - Added **Suggest Links**: opens an editor tab proposing local files for unlinked web
-  resources and links the rows you tick in one go. Files with identical content are found
-  whatever their names (so renamed or moved copies are matched with certainty); the rest
-  are matched by name. Ambiguous and name-only matches start unticked.
+  resources by matching names, confirms candidates by comparing content, and links the rows
+  you tick in one go. Ambiguous and name-only matches start unticked.
 - Added **Publish This File**: publish a linked file straight from the editor via its
   title-bar button, <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>U</kbd>, or the Command Palette. It
   saves first and confirms like publishing from the view. The extension now activates on
