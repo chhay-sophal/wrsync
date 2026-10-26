@@ -2,7 +2,7 @@
 
 All notable changes to the "wrsync" extension will be documented in this file.
 
-## [Unreleased]
+## [0.1.1]
 
 - **Suggest Links finds files by content, whatever their names**: it compares every unlinked
   web resource with every unlinked local file of a matching type, so renamed or moved
