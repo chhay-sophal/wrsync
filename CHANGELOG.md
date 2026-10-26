@@ -46,8 +46,9 @@ All notable changes to the "wrsync" extension will be documented in this file.
   step (after a confirmation). Open editors update in place, the file keeps its line
   endings, and files with unsaved changes are left alone.
 - Added **Suggest Links**: opens an editor tab proposing local files for unlinked web
-  resources by matching names, confirms candidates by comparing content, and links the rows
-  you tick in one go. Ambiguous and name-only matches start unticked.
+  resources and links the rows you tick in one go. Files with identical content are found
+  whatever their names (so renamed or moved copies are matched with certainty); the rest
+  are matched by name. Ambiguous and name-only matches start unticked.
 - Added **Publish This File**: publish a linked file straight from the editor via its
   title-bar button, <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>U</kbd>, or the Command Palette. It
   saves first and confirms like publishing from the view. The extension now activates on

@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
-import { getWebResourceContent } from './dataverseClient';
+import { findIdenticalContent } from './linkSuggestionContent';
 import { createLinks, type ResourceLink } from './linksStore';
-import { getWorkspaceFileContent } from './workspaceFiles';
 
 interface RpcRequest {
 	type: 'rpc';
@@ -14,9 +13,9 @@ type Handler = (params: any) => Promise<unknown>;
 
 /** What the webview (now only the "Suggested links" tab) can call in the extension. */
 const handlers: Record<string, Handler> = {
-	'dataverse.getWebResourceContent': (params: { orgApiUrl: string; webresourceId: string }) =>
-		getWebResourceContent(params.orgApiUrl, params.webresourceId),
-	'workspace.getFileContent': (params: { path: string }) => getWorkspaceFileContent(params.path),
+	// One call for the whole content comparison - batched downloads and local reads happen here,
+	// not as a request per candidate from the page.
+	'suggestions.findIdenticalContent': (params: Parameters<typeof findIdenticalContent>[0]) => findIdenticalContent(params),
 	// The modified tracker checks the new links itself (it listens for link changes).
 	'links.createMany': (params: { links: Omit<ResourceLink, 'id'>[] }) => createLinks(params.links),
 };

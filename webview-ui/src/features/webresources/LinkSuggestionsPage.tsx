@@ -12,17 +12,16 @@ import {
 import { ArrowRightRegular, LinkMultipleRegular } from "@fluentui/react-icons";
 import { useEffect, useMemo, useState } from "react";
 import vscodeApi from "../../vscodeApi";
-import { getWebResourceContent } from "../../api/dataverse";
-import { createLinks, getLocalFileContent } from "../../api/local";
-import { base64ToUtf8 } from "../../lib/base64";
+import { createLinks, findIdenticalContent } from "../../api/local";
 import { isRowClick } from "../../lib/rowClick";
-import { normalizeForCompare } from "../../lib/text";
-import { suggestLinks, type LinkSuggestion, type MatchKind, type SuggestionResource } from "./linkSuggestions";
-
-/** Candidates per resource whose content is compared - enough to settle real ambiguity
- * (src/ vs lib/ copies) without fetching every file named utils.js in a large workspace. */
-const MAX_CONTENT_CHECKS_PER_RESOURCE = 5;
-const CONTENT_CHECK_CONCURRENCY = 6;
+import {
+  matchKindOf,
+  mergeSuggestions,
+  type ContentMatches,
+  type LinkSuggestion,
+  type MatchKind,
+  type SuggestionResource,
+} from "./linkSuggestions";
 
 /** Sent by the extension (src/linkSuggestionsPanel.ts) once this page reports ready. */
 interface LinkSuggestionsData {
@@ -50,16 +49,6 @@ const KIND_BADGE: Record<MatchKind, { label: string; color: "success" | "brand" 
   path: { label: "Path match", color: "brand" },
   name: { label: "Name only", color: "informative" },
 };
-
-/** Runs tasks with at most `limit` in flight, so a large solution doesn't fire hundreds of
- * Dataverse requests at once. */
-async function runLimited(tasks: (() => Promise<void>)[], limit: number): Promise<void> {
-  let next = 0;
-  async function worker() {
-    while (next < tasks.length) await tasks[next++]();
-  }
-  await Promise.all(Array.from({ length: Math.min(limit, tasks.length) }, worker));
-}
 
 function closePanel() {
   vscodeApi.postMessage({ type: "close" });
@@ -104,66 +93,44 @@ function LinkSuggestionsReview({
   filePaths,
   onClose,
 }: Props) {
-  // Computed once per opening: links created meanwhile shouldn't reshuffle rows mid-review.
-  const [suggestions] = useState<LinkSuggestion[]>(() => suggestLinks(resources, filePaths));
-  const [identical, setIdentical] = useState<Map<string, string[]>>(new Map());
-  const [checked, setChecked] = useState(0);
+  // The extension compares the content of every unlinked resource with every candidate file in
+  // one call (src/linkSuggestionContent.ts). Undefined while it runs; a failure falls back to
+  // name matching alone. Fetched once per opening: links created meanwhile shouldn't reshuffle
+  // rows mid-review.
+  const [content, setContent] = useState<{ matches?: ContentMatches; error?: string } | undefined>(undefined);
   const [rows, setRows] = useState<Map<string, Row>>(new Map());
   const [linking, setLinking] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const totalChecks = useMemo(
-    () => suggestions.reduce((n, s) => n + Math.min(s.candidates.length, MAX_CONTENT_CHECKS_PER_RESOURCE), 0),
-    [suggestions]
-  );
-  const checking = checked < totalChecks;
-
   useEffect(() => {
     let cancelled = false;
-    const tasks = suggestions.map((s) => async () => {
-      const candidates = s.candidates.slice(0, MAX_CONTENT_CHECKS_PER_RESOURCE);
-      try {
-        const remote = normalizeForCompare(base64ToUtf8(await getWebResourceContent(orgApiUrl, s.resource.webresourceid)));
-        const matches: string[] = [];
-        for (const path of candidates) {
-          try {
-            if (normalizeForCompare(await getLocalFileContent(path)) === remote) matches.push(path);
-          } catch {
-            // Unreadable file - just not confirmed.
-          }
-          if (!cancelled) setChecked((n) => n + 1);
-        }
-        if (!cancelled && matches.length > 0) {
-          setIdentical((prev) => new Map(prev).set(s.resource.webresourceid, matches));
-        }
-      } catch {
-        // Dataverse content unavailable: fall back to the name match alone.
-        if (!cancelled) setChecked((n) => n + candidates.length);
-      }
-    });
-    runLimited(tasks, CONTENT_CHECK_CONCURRENCY);
+    findIdenticalContent({
+      orgApiUrl,
+      resources: resources.map(({ webresourceid, webresourcetype }) => ({ webresourceid, webresourcetype })),
+      filePaths,
+    })
+      .then((matches) => !cancelled && setContent({ matches }))
+      .catch((err) => !cancelled && setContent({ error: (err as Error).message }));
     return () => {
       cancelled = true;
     };
-  }, [suggestions, orgApiUrl]);
+    // resources/filePaths are fixed for this opening (the page remounts for new data).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orgApiUrl]);
 
-  /** What a row shows until the user touches it: an identical-content candidate when exactly
-   * one exists (certain), otherwise the best name match - ticked only when unambiguous and
-   * deeper than a bare file name. */
-  function defaultRow(s: LinkSuggestion): Row {
-    const matches = identical.get(s.resource.webresourceid) ?? [];
-    if (matches.length === 1) return { checked: true, path: matches[0] };
-    return { checked: s.kind === "path" && !s.ambiguous, path: s.candidates[0] };
-  }
+  const checking = content === undefined;
+  const suggestions = useMemo<LinkSuggestion[]>(
+    () => (content ? mergeSuggestions(resources, filePaths, content.matches) : []),
+    [content, resources, filePaths]
+  );
 
   const view = suggestions.map((s) => {
-    const row = { ...defaultRow(s), ...rows.get(s.resource.webresourceid) };
-    // The badge describes the file currently chosen, which the user may have changed.
-    const matches = identical.get(s.resource.webresourceid) ?? [];
-    const isIdentical = matches.includes(row.path);
-    const kind: MatchKind = isIdentical ? "identical" : s.kind;
-    const ambiguous = !isIdentical && (s.ambiguous || matches.length > 1);
-    return { suggestion: s, ...row, kind, ambiguous };
+    const touched = rows.get(s.resource.webresourceid);
+    const row: Row = { checked: s.checked, path: s.path, ...touched };
+    // The badges describe the file currently chosen, which the user may have changed; once
+    // they've picked or ticked, the decision is theirs, so it's no longer "ambiguous".
+    const kind = matchKindOf(s, row.path) ?? "name";
+    return { suggestion: s, ...row, kind, ambiguous: s.ambiguous && !touched };
   });
 
   const selected = view.filter((v) => v.checked);
@@ -205,19 +172,26 @@ function LinkSuggestionsReview({
           Suggested links
         </Text>
         <Text size={200} style={{ color: tokens.colorNeutralForeground3 }}>
-          {solutionName} - based on matching names, confirmed by comparing content where possible. Only ticked
-          rows are linked; nothing is published or changed.
+          {solutionName} - files with identical content are found whatever their names; the rest are matched by
+          name. Only ticked rows are linked; nothing is published or changed.
         </Text>
-        {checking && (
-          <Spinner size="tiny" labelPosition="after" label={`Comparing content... ${checked}/${totalChecks}`} />
+        {content?.error && (
+          <Text size={200} style={{ color: tokens.colorPaletteRedForeground1 }}>
+            Couldn't compare content ({content.error}) - showing name matches only.
+          </Text>
         )}
       </header>
 
       <main className="flex min-h-0 flex-1 flex-col overflow-auto px-6 py-4">
-        {suggestions.length === 0 ? (
+        {checking ? (
+          <Spinner
+            labelPosition="below"
+            label={`Comparing the content of ${resources.length} web resource${resources.length === 1 ? "" : "s"} with ${filePaths.length} local file${filePaths.length === 1 ? "" : "s"}...`}
+          />
+        ) : suggestions.length === 0 ? (
           <Text>
-            No suggestions: no unlinked local file's path matches an unlinked web resource's name. Link these from
-            each card in the sidebar instead.
+            No suggestions: no unlinked local file has identical content or a matching name. Link these from the Web
+            Resources view instead.
           </Text>
         ) : (
           <div

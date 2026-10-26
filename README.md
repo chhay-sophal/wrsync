@@ -108,15 +108,22 @@ file in Explorer, and the Activity Bar icon shows a count of modified resources.
 type checks existed whose file type doesn't match; it can't be published until you unlink it
 and link a matching file.
 
-To link many at once, click **Suggest Links** (sparkle button). It matches unlinked web
-resources to unlinked local files by name — e.g. `new_/scripts/account.js` ↔
-`src/scripts/account.js` — and confirms each candidate by comparing its content with
-Dataverse. The suggestions open in an editor tab; untick anything wrong:
+To link many at once, click **Suggest Links** (sparkle button). It compares the content of
+every unlinked web resource with every unlinked local file of a matching type, so a file
+with identical content is found whatever it's called or wherever it lives (line endings and a
+BOM don't count as differences). The rest are matched by name — e.g.
+`new_/scripts/account.js` ↔ `src/scripts/account.js` — which also finds copies you've
+edited. The suggestions open in an editor tab; untick anything wrong:
 
-- **Identical content** — the file matches what's in Dataverse; ticked.
+- **Identical content** — the file matches what's in Dataverse, even under a different name;
+  ticked.
 - **Path match** — a unique match on the file name plus its folder(s); ticked.
-- **Name only** / **Ambiguous** — only the file name matches, or several files do;
-  unticked, and you pick the file from a dropdown.
+- **Name only** / **Ambiguous** — only the file name matches, several files fit equally
+  well, or several web resources share the same content; unticked, and you pick the file
+  from a dropdown.
+
+Very short content (empty files, one-line stubs) and files over 1 MB are left to name
+matching.
 
 Only the ticked rows are linked. Nothing is published or changed.
 
