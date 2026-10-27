@@ -11,7 +11,7 @@ All notable changes to the "wrsync" extension will be documented in this file.
 - Suggest Links is faster: the content comparison runs in the extension in one batched pass
   instead of one request per candidate file.
 - Each suggestion has a **Compare** button that opens a read-only diff of the Dataverse
-  content and the chosen file beside the list.
+  content and the chosen file in a new tab.
 
 ## [0.1.0]
 

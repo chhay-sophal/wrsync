@@ -143,7 +143,7 @@ function LinkSuggestionsReview({
     setRows((prev) => new Map(prev).set(id, { ...base, ...prev.get(id), ...patch }));
   }
 
-  /** Opens a diff of the Dataverse content and the chosen candidate beside this tab. */
+  /** Opens a read-only diff of the Dataverse content and the chosen candidate in a new tab. */
   async function handleCompare(resource: SuggestionResource, path: string) {
     setError(null);
     try {

@@ -74,8 +74,9 @@ export async function openCompareDiff(
 		localPath: string;
 		/** Open as a preview tab and leave focus where it is (e.g. on the clicked tree item). */
 		preserveFocus?: boolean;
-		/** Where to open it, e.g. Beside to keep the Suggested links tab in view. Default: the
-		 * active editor group. */
+		/** Open as a preview tab (replaced by the next preview) even when taking focus. */
+		preview?: boolean;
+		/** Where to open it. Default: the active editor group, as a tab next to the current one. */
 		viewColumn?: vscode.ViewColumn;
 		/** Show a read-only snapshot of the local file instead of the file itself, so neither
 		 * side can be edited. Off by default: the Web Resources view's Compare keeps the local
@@ -96,6 +97,7 @@ export async function openCompareDiff(
 		: `${params.webresourceName} (Dataverse ↔ Local)`;
 	await vscode.commands.executeCommand('vscode.diff', remoteUri, localUri, title, {
 		...showOptions(params.preserveFocus),
+		...(params.preview ? { preview: true } : {}),
 		viewColumn: params.viewColumn,
 	});
 }

@@ -98,7 +98,7 @@ function findIdenticalContent(p: { resources: { webresourceid: string; webresour
 const handlers: Record<string, (params: any) => unknown> = {
   "suggestions.findIdenticalContent": findIdenticalContent,
   "compare.openDiff": (p: { webresourceName: string; localPath: string }) => {
-    console.info(`[wrsync mock] Would open a diff beside this tab: ${p.webresourceName} <-> ${p.localPath}`);
+    console.info(`[wrsync mock] Would open a diff in a new tab: ${p.webresourceName} <-> ${p.localPath}`);
   },
   "links.createMany": (p: { links: Omit<ResourceLink, "id">[] }) => {
     const created = p.links.map((l, i) => ({ id: `link-${Date.now()}-${i}`, ...l }));

@@ -124,9 +124,10 @@ edited. The suggestions open in an editor tab; untick anything wrong:
 
 Very short content (empty files, one-line stubs) and files over 1 MB are left to name
 matching. To check a candidate yourself, click its **Compare** button: a read-only diff of the
-Dataverse content and the chosen file opens beside the list, which stays in view. (Both sides
-are read-only there, since the file isn't linked yet; it shows the file as it was when you
-clicked, and clicking again refreshes it.)
+Dataverse content and the chosen file opens in a new tab; click the **Suggested links** tab to
+get back to the list. Comparing another candidate reuses that tab. (Both sides are read-only
+there, since the file isn't linked yet; it shows the file as it was when you clicked, and
+clicking again refreshes it.)
 
 Only the ticked rows are linked. Nothing is published or changed.
 
