@@ -3,7 +3,7 @@ import { getAuthStatus } from './auth';
 import { getWebResourceContent, getWebResourceDetails, listWebResourcesForSolution, type WebResource } from './dataverseClient';
 import { listLinks, onDidChangeLinks, type ResourceLink } from './linksStore';
 import { checkUnchecked, isLinkModified, onDidChangeModified } from './modifiedTracker';
-import { filtersActive, getEnvironment, getFilters, getSolution, getSort, onDidChangeState } from './state';
+import { filtersActive, getEnvironment, getFilters, getSolution, getSort, matchesText, onDidChangeState } from './state';
 import {
 	imageMimeType,
 	isImageType,
@@ -203,7 +203,11 @@ export class WebResourceTree
 		} else if (this.resources.length === 0) {
 			this.view.message = 'No web resources in this solution.';
 		} else if (filtersActive(filters)) {
-			this.view.message = shown === 0 ? 'No web resources match the current filters.' : `Filtered: showing ${shown} of ${this.resources.length}.`;
+			const search = filters.search.trim() ? ` (search "${filters.search.trim()}")` : '';
+			this.view.message =
+				shown === 0
+					? `No web resources match the current filters${search}.`
+					: `Filtered: showing ${shown} of ${this.resources.length}${search}.`;
 		} else {
 			this.view.message = undefined;
 		}
@@ -237,7 +241,8 @@ export class WebResourceTree
 				(filters.types.length === 0 || filters.types.includes(n.resource.webresourcetype)) &&
 				(filters.managed === 'all' || (filters.managed === 'managed') === n.resource.ismanaged) &&
 				(!filters.modifiedOnly || n.modified) &&
-				(filters.link === 'all' || (filters.link === 'linked') === (n.link !== undefined))
+				(filters.link === 'all' || (filters.link === 'linked') === (n.link !== undefined)) &&
+				matchesSearch(n, filters.search)
 		);
 		const sort = getSort() ?? { column: 'name', direction: 'asc' };
 		const dir = sort.direction === 'asc' ? 1 : -1;
@@ -258,6 +263,22 @@ export class WebResourceTree
 	/** Number of modified resources in the current solution. */
 	modifiedCount(): number {
 		return [...this.nodes.values()].filter((n) => n.modified).length;
+	}
+
+	/** Whether the node is shown with the current filters (Go to Web Resource needs to know). */
+	isVisible(node: WebResourceNode): boolean {
+		return this.visibleNodes().some((n) => n.resource.webresourceid === node.resource.webresourceid);
+	}
+
+	/** Selects and focuses the node in the tree (Go to Web Resource). */
+	async revealNode(node: WebResourceNode): Promise<void> {
+		const current = this.nodes.get(node.resource.webresourceid);
+		if (current) {await this.view.reveal(current, { select: true, focus: true });}
+	}
+
+	/** The list is flat, so nothing has a parent - but reveal() requires this to be implemented. */
+	getParent(): undefined {
+		return undefined;
 	}
 
 	getChildren(element?: WebResourceNode): WebResourceNode[] {
@@ -367,6 +388,15 @@ export class WebResourceTree
 		}
 		return undefined;
 	}
+}
+
+/** The Search filter: name, display name or linked file path (VS Code's built-in tree find only
+ * sees the name). */
+function matchesSearch(node: WebResourceNode, search: string): boolean {
+	if (!search.trim()) {return true;}
+	return [node.resource.name, node.resource.displayname, node.link?.localPath ?? ''].some((value) =>
+		matchesText(value, search)
+	);
 }
 
 function escapeMd(text: string): string {

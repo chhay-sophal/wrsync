@@ -82,6 +82,23 @@
         "icon": "$(sparkle)"
       },
       {
+        "command": "wrsync.search",
+        "title": "Search...",
+        "category": "Web Resource Sync",
+        "icon": "$(search)"
+      },
+      {
+        "command": "wrsync.clearSearch",
+        "title": "Clear Search",
+        "category": "Web Resource Sync"
+      },
+      {
+        "command": "wrsync.goToWebResource",
+        "title": "Go to Web Resource...",
+        "category": "Web Resource Sync",
+        "icon": "$(search)"
+      },
+      {
         "command": "wrsync.filterTypes",
         "title": "Filter by Type...",
         "category": "Web Resource Sync"
@@ -229,6 +246,15 @@
       ],
       "wrsync.filter": [
         {
+          "command": "wrsync.search",
+          "group": "0_search@1"
+        },
+        {
+          "command": "wrsync.clearSearch",
+          "group": "0_search@2",
+          "when": "wrsync.searchActive"
+        },
+        {
           "command": "wrsync.filterTypes",
           "group": "1_filter@1"
         },
@@ -273,6 +299,15 @@
         }
       ],
       "wrsync.filterActive": [
+        {
+          "command": "wrsync.search",
+          "group": "0_search@1"
+        },
+        {
+          "command": "wrsync.clearSearch",
+          "group": "0_search@2",
+          "when": "wrsync.searchActive"
+        },
         {
           "command": "wrsync.filterTypes",
           "group": "1_filter@1"
@@ -339,14 +374,19 @@
           "group": "navigation@3"
         },
         {
+          "command": "wrsync.goToWebResource",
+          "when": "view == wrsync.webResources && wrsync.signedIn && wrsync.hasSolution",
+          "group": "navigation@4"
+        },
+        {
           "submenu": "wrsync.filter",
           "when": "view == wrsync.webResources && wrsync.signedIn && wrsync.hasSolution && !wrsync.filtersActive",
-          "group": "navigation@4"
+          "group": "navigation@5"
         },
         {
           "submenu": "wrsync.filterActive",
           "when": "view == wrsync.webResources && wrsync.signedIn && wrsync.hasSolution && wrsync.filtersActive",
-          "group": "navigation@4"
+          "group": "navigation@5"
         },
         {
           "command": "wrsync.sortBy",
@@ -562,6 +602,18 @@
         {
           "command": "wrsync.showUnlinkedOnly",
           "when": "wrsync.signedIn && wrsync.hasSolution"
+        },
+        {
+          "command": "wrsync.search",
+          "when": "wrsync.signedIn && wrsync.hasSolution"
+        },
+        {
+          "command": "wrsync.goToWebResource",
+          "when": "wrsync.signedIn && wrsync.hasSolution"
+        },
+        {
+          "command": "wrsync.clearSearch",
+          "when": "wrsync.searchActive"
         }
       ]
     },

@@ -72,6 +72,13 @@ To move into the editor instead, use the same actions from the right-click menu.
   sync status, and who last modified it in Dataverse. Images and SVGs also show a thumbnail.
 - **Find**: with the view focused, start typing (or press <kbd>Ctrl</kbd>+<kbd>F</kbd>) to
   find or filter by name — VS Code's built-in tree find.
+- **Search...** (top of the Filter menu): keeps only web resources whose name, display name,
+  or linked file contains the text — e.g. `Account Form` finds a resource by its display name,
+  which the built-in find can't. `*` and `?` work as wildcards (`new_*form*.js`). **Clear
+  Search** (or an empty search) removes it.
+- **Go to Web Resource...** (search button in the title bar): pick a web resource by name,
+  display name, or linked file, and it's selected in the tree. If the current filters hide it,
+  they're reset so it can be shown.
 - **Filter** (funnel button): by type, by managed state, **Show Modified Only**, **Show
   Linked Only**, or **Show Unlinked Only** (handy for finding what still needs linking).
   The funnel turns solid while a filter is on; **Clear Filters** resets it.

@@ -14,6 +14,9 @@ export interface Filters {
 	/** Only resources whose linked local file differs from Dataverse. */
 	modifiedOnly: boolean;
 	link: LinkFilter;
+	/** Text matched against name, display name and linked file path (see matchesText); empty
+	 * matches everything. */
+	search: string;
 }
 
 export interface SortState {
@@ -21,7 +24,21 @@ export interface SortState {
 	direction: 'asc' | 'desc';
 }
 
-export const EMPTY_FILTERS: Filters = { types: [], managed: 'all', modifiedOnly: false, link: 'all' };
+export const EMPTY_FILTERS: Filters = { types: [], managed: 'all', modifiedOnly: false, link: 'all', search: '' };
+
+/** Matches `pattern` against `value`. Plain text is a case-insensitive "contains" match; `*`
+ * (any run of characters) and `?` (any single character) make it a whole-value wildcard match,
+ * e.g. "new_*form*.js". An empty pattern matches everything. */
+export function matchesText(value: string, pattern: string): boolean {
+	const trimmed = pattern.trim();
+	if (!trimmed) {return true;}
+	if (!/[*?]/.test(trimmed)) {return value.toLowerCase().includes(trimmed.toLowerCase());}
+	const regex = trimmed
+		.split('')
+		.map((ch) => (ch === '*' ? '.*' : ch === '?' ? '.' : ch.replace(/[.+^${}()|[\]\\]/g, '\\$&')))
+		.join('');
+	return new RegExp(`^${regex}$`, 'i').test(value);
+}
 
 const KEY_ENVIRONMENT = 'wrsync.environment';
 const KEY_SOLUTION = 'wrsync.solution';
@@ -95,7 +112,13 @@ export async function setSort(sort: SortState | undefined): Promise<void> {
 }
 
 export function filtersActive(filters = getFilters()): boolean {
-	return filters.types.length > 0 || filters.managed !== 'all' || filters.modifiedOnly || filters.link !== 'all';
+	return (
+		filters.types.length > 0 ||
+		filters.managed !== 'all' ||
+		filters.modifiedOnly ||
+		filters.link !== 'all' ||
+		filters.search.trim() !== ''
+	);
 }
 
 /** On sign-out: forget the environment and solution (they belong to the signed-in account). */
@@ -118,4 +141,5 @@ function updateContextKeys(): void {
 	vscode.commands.executeCommand('setContext', 'wrsync.filtersActive', filtersActive(filters));
 	vscode.commands.executeCommand('setContext', 'wrsync.modifiedOnly', filters.modifiedOnly);
 	vscode.commands.executeCommand('setContext', 'wrsync.linkFilter', filters.link);
+	vscode.commands.executeCommand('setContext', 'wrsync.searchActive', filters.search.trim() !== '');
 }

@@ -307,6 +307,49 @@ export function registerWebResourceCommands(context: vscode.ExtensionContext, tr
 	register('wrsync.showAllNotOnlyUnlinked', toggleLink('unlinked'));
 	register('wrsync.clearFilters', guarded('Clear filters', () => setFilters(EMPTY_FILTERS)));
 	register(
+		'wrsync.search',
+		guarded('Search', async () => {
+			const filters = getFilters();
+			const search = await vscode.window.showInputBox({
+				title: 'Search web resources',
+				prompt: 'Matches name, display name or linked file. Use * and ? as wildcards (e.g. new_*form*.js). Leave empty to clear.',
+				value: filters.search,
+				placeHolder: 'e.g. account, Account Form, src/forms',
+			});
+			if (search !== undefined) {await setFilters({ ...filters, search: search.trim() });}
+		})
+	);
+	register('wrsync.clearSearch', guarded('Clear search', () => setFilters({ ...getFilters(), search: '' })));
+	register(
+		'wrsync.goToWebResource',
+		guarded('Go to web resource', async () => {
+			const nodes = [...tree.allNodes()].sort((a, b) => a.resource.name.localeCompare(b.resource.name));
+			if (nodes.length === 0) {
+				vscode.window.showInformationMessage('No web resources loaded yet.');
+				return;
+			}
+			const picked = await vscode.window.showQuickPick(
+				nodes.map((node) => {
+					const hidden = !tree.isVisible(node);
+					return {
+						label: node.resource.name,
+						description: node.resource.displayname,
+						detail: [node.link ? `$(link) ${node.link.localPath}` : undefined, hidden ? 'hidden by current filters' : undefined]
+							.filter(Boolean)
+							.join(' · ') || undefined,
+						node,
+						hidden,
+					};
+				}),
+				{ title: 'Go to web resource', placeHolder: 'Search by name, display name or linked file', matchOnDescription: true, matchOnDetail: true }
+			);
+			if (!picked) {return;}
+			// It can only be shown and selected if the filters let it through.
+			if (picked.hidden) {await setFilters(EMPTY_FILTERS);}
+			await tree.revealNode(picked.node);
+		})
+	);
+	register(
 		'wrsync.sortBy',
 		guarded('Sort', async () => {
 			const current = getSort() ?? { column: 'name' as SortColumn, direction: 'asc' as const };

@@ -4,6 +4,11 @@ All notable changes to the "wrsync" extension will be documented in this file.
 
 ## [0.1.1]
 
+- Added **Search...** to the Filter menu: filters web resources by name, display name, or
+  linked file (with `*` / `?` wildcards) - unlike VS Code's built-in tree find, which only
+  sees the name.
+- Added **Go to Web Resource...** (search button in the view's title bar): pick a web
+  resource by name, display name, or linked file to select it in the tree.
 - **Suggest Links finds files by content, whatever their names**: it compares every unlinked
   web resource with every unlinked local file of a matching type, so renamed or moved
   identical copies are matched with certainty; the rest are still matched by name. Very
