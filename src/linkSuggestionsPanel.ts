@@ -3,7 +3,7 @@ import { onDidRebuildWebview } from './devReload';
 import { dispatchRpc } from './rpc';
 import { getHtml } from './webviewHtml';
 
-/** Everything the "Suggested links" page needs, gathered by the Web Resources tree (which
+/** Everything the "Suggested Links" page needs, gathered by the Web Resources tree (which
  * already has the solution's resources and links loaded). */
 export interface LinkSuggestionsData {
 	orgApiUrl: string;
@@ -27,12 +27,12 @@ function postInit(): void {
 	panel?.webview.postMessage({ type: 'init', nonce: Date.now(), data: currentData });
 }
 
-/** Opens "Suggested links" in an editor tab - the sidebar is too narrow to review a list of
+/** Opens "Suggested Links" in an editor tab - the sidebar is too narrow to review a list of
  * resource/file pairs comfortably. There's one tab at a time: opening again (e.g. for another
  * solution) reuses it with the new data. */
 export function openLinkSuggestionsPanel(data: LinkSuggestionsData): void {
 	currentData = data;
-	const title = `Suggested links - ${data.solutionName}`;
+	const title = `Suggested Links - ${data.solutionName}`;
 	if (panel) {
 		panel.title = title;
 		panel.reveal();

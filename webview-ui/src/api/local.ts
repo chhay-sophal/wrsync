@@ -22,7 +22,7 @@ export function findIdenticalContent(params: {
 }
 
 /** Opens VS Code's read-only diff of the web resource's Dataverse content and a local file, in
- * a new tab next to the Suggested links tab. */
+ * a new tab next to the Suggested Links tab. */
 export function openCompareDiff(params: {
   orgApiUrl: string;
   webresourceId: string;

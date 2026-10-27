@@ -12,12 +12,12 @@ interface RpcRequest {
 
 type Handler = (params: any) => Promise<unknown>;
 
-/** What the webview (now only the "Suggested links" tab) can call in the extension. */
+/** What the webview (now only the "Suggested Links" tab) can call in the extension. */
 const handlers: Record<string, Handler> = {
 	// One call for the whole content comparison - batched downloads and local reads happen here,
 	// not as a request per candidate from the page.
 	'suggestions.findIdenticalContent': (params: Parameters<typeof findIdenticalContent>[0]) => findIdenticalContent(params),
-	// A candidate's Compare button: opens as a tab in the Suggested links tab's group and takes
+	// A candidate's Compare button: opens as a tab in the Suggested Links tab's group and takes
 	// focus (the list is behind it; its tab is one click away). A preview tab, so comparing the
 	// next candidate reuses it instead of piling up tabs. Both sides are read-only - the
 	// candidate isn't linked; this is only for judging the match.

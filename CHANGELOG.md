@@ -78,7 +78,7 @@ All notable changes to the "wrsync" extension will be documented in this file.
 - Large solutions no longer fail to load: web resources are listed in batches instead of one
   request whose URL could exceed Dataverse's length limit.
 - Linking a file and Suggest Links list workspace files faster in large repositories.
-- An unexpected error in the Suggested links tab shows a recovery screen (Try again /
+- An unexpected error in the Suggested Links tab shows a recovery screen (Try again /
   Reload / Reset & reload, plus error details) instead of a blank view.
 
 ## [0.0.2]

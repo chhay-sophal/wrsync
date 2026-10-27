@@ -1,6 +1,6 @@
 /**
  * Browser stand-in for the VS Code extension, for working on the webview UI (now just the
- * "Suggested links" page - the sidebar is a native tree view) with Vite's hot reload:
+ * "Suggested Links" page - the sidebar is a native tree view) with Vite's hot reload:
  * `npm run dev:mock` (repo root or webview-ui/). Injected ahead of main.tsx only in
  * `--mode mock` (see vite.config.ts) - never part of the extension build.
  *
@@ -154,4 +154,4 @@ Object.assign(window, {
   wrsyncMock: { createdLinks },
 });
 
-console.info("[wrsync mock] Running the Suggested links page against fake data. See src/dev/mockVscode.ts.");
+console.info("[wrsync mock] Running the Suggested Links page against fake data. See src/dev/mockVscode.ts.");

@@ -55,7 +55,7 @@ function closePanel() {
   vscodeApi.postMessage({ type: "close" });
 }
 
-/** The "Suggested links" editor tab. Waits for its data from the extension, and remounts the
+/** The "Suggested Links" editor tab. Waits for its data from the extension, and remounts the
  * review whenever new data arrives (the tab is reused when opened again), so each opening
  * starts fresh. Links it creates reach the sidebar through the extension's links-changed
  * event, so there's nothing to hand back. */
@@ -186,7 +186,7 @@ function LinkSuggestionsReview({
         style={{ background: tokens.colorNeutralBackground1, borderBottom: `1px solid ${tokens.colorNeutralStroke2}` }}
       >
         <Text size={500} weight="semibold">
-          Suggested links
+          Suggested Links
         </Text>
         <Text size={200} style={{ color: tokens.colorNeutralForeground3 }}>
           {solutionName} - files with identical content are found whatever their names; the rest are matched by

@@ -124,7 +124,7 @@ edited. The suggestions open in an editor tab; untick anything wrong:
 
 Very short content (empty files, one-line stubs) and files over 1 MB are left to name
 matching. To check a candidate yourself, click its **Compare** button: a read-only diff of the
-Dataverse content and the chosen file opens in a new tab; click the **Suggested links** tab to
+Dataverse content and the chosen file opens in a new tab; click the **Suggested Links** tab to
 get back to the list. Comparing another candidate reuses that tab. (Both sides are read-only
 there, since the file isn't linked yet; it shows the file as it was when you clicked, and
 clicking again refreshes it.)
@@ -206,8 +206,8 @@ The extension is split into two parts:
 - **The extension host** (`src/`) — runs in Node, talks to Microsoft Entra ID (via
   `@azure/msal-node`) and the Dataverse Web API, and provides the native **Web Resources**
   tree view, its commands, and the editors it opens.
-- **The webview UI** (`webview-ui/`) — a separate React + Vite + Fluent UI project, now used
-  only for the **Suggested links** editor tab. It never calls `fetch()` directly; it talks
+- **The webview USuggested Linksi/`) — a separate React + Vite + Fluent UI project, now used
+  only for the **Suggested Links** editor tab. It never calls `fetch()` directly; it talks
   to the extension host over `postMessage()` through the RPC bridge in `src/rpc.ts` /
   `webview-ui/src/api/rpc.ts`.
 
@@ -227,20 +227,20 @@ you don't need a separate step for that.
 Open the folder in VS Code and press **F5** to launch an Extension Development Host with
 the extension loaded. The default build task watches both parts and rebuilds on save; to
 see a change in the Extension Development Host:
-
-- `webview-ui/` (the Suggested links tab): nothing to do. When run from F5, the extension
+Suggested Links
+- `webview-ui/` (the Suggested Links tab): nothing to do. When run from F5, the extension
   watches `webview-ui/dist` and reloads the tab as soon as each rebuild is complete.
 - `src/` (the extension): restart debugging (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>F5</kbd>).
 - `package.json`'s `contributes`: **Developer: Reload Window**, since that's read at
   activation.
-
-### Working on the Suggested links page in a browser
+Suggested Links
+### Working on the Suggested Links page in a browser
 
 ```
 npm run dev:mock
 ```
-
-The sidebar is a native tree view, so the only webview UI left is the Suggested links tab.
+Suggested Links
+The sidebar is a native tree view, so the only webview UI left is the Suggested Links tab.
 This serves it at http://localhost:5173 with Vite's hot reload, against fake data instead of
 VS Code and Dataverse (`webview-ui/src/dev/mockVscode.ts`), so edits show up as you type. The
 fixture covers each suggestion outcome: identical content, path match, flat name, ambiguous,
@@ -272,8 +272,8 @@ host — the same checks `npm run package` runs before packaging a `.vsix`.
 | `src/modifiedTracker.ts` | Batched local-vs-Dataverse comparison and the Activity Bar badge |
 | `src/compareProvider.ts` | Read-only Dataverse documents: Compare diffs and View Content |
 | `src/mediaProvider.ts` | Image and SVG previews (via temporary copies) |
-| `src/publishCurrentFile.ts` | "Publish This File" from the editor |
-| `src/linkSuggestionsPanel.ts` / `src/webviewHtml.ts` | Host the Suggested links webview tab |
-| `src/rpc.ts` | Routes the Suggested links tab's calls to the functions above |
-| `src/devReload.ts` | Under F5, reloads the webview tab after each UI rebuild |
-| `webview-ui/src/features/webresources/` | The Suggested links page |
+| `src/publishCurrentFile.ts` | "Publish This File" from the editoSuggested Links
+| `src/linkSuggestionsPanel.Suggested LinksiewHtml.ts` | Host the Suggested Links webview tab |
+| `src/rpc.ts` | Routes the Suggested Links tab's calls to the functions above |
+| `src/devReload.ts` | Under F5, reloads the webSuggested Linkseach UI rebuild |
+| `webview-ui/src/features/webresources/` | The Suggested Links page |
