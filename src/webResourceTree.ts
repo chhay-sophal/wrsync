@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { getAuthStatus } from './auth';
 import { getWebResourceContent, getWebResourceDetails, listWebResourcesForSolution, type WebResource } from './dataverseClient';
-import { listLinks, onDidChangeLinks, type ResourceLink } from './linksStore';
+import { listLinks, onDidChangeLinks, useEnvironment, type ResourceLink } from './linksStore';
 import { checkUnchecked, isLinkModified, onDidChangeModified } from './modifiedTracker';
 import { filtersActive, getEnvironment, getFilters, getSolution, getSort, matchesText, onDidChangeState } from './state';
 import {
@@ -165,7 +165,11 @@ export class WebResourceTree
 		}
 		this.loading = false;
 		this.render();
-		if (this.resources) {checkUnchecked(environment.id);}
+		if (this.resources) {
+			// Matches dataverse.json's links (kept by name) to this environment's records first.
+			void useEnvironment(environment, solution.uniquename, this.resources);
+			checkUnchecked(environment.id);
+		}
 	}
 
 	/** Rebuilds the nodes from the loaded resources, links and Modified state, and refreshes the

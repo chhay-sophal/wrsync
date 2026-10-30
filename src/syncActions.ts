@@ -5,7 +5,8 @@ import {
 	publishWebResources,
 	updateWebResourceContent,
 } from './dataverseClient';
-import { deleteLink, type ResourceLink } from './linksStore';
+import { deleteLink, usesSharedFile, type ResourceLink } from './linksStore';
+import { SHARED_FILE_NAME } from './sharedLinks';
 import { recheckWebResources } from './modifiedTracker';
 import { getWorkspaceFileContent, replaceWorkspaceFileContent } from './workspaceFiles';
 
@@ -118,7 +119,12 @@ export async function confirmAndPull(apiUrl: string, item: PublishItem): Promise
 export async function confirmAndUnlink(link: ResourceLink): Promise<boolean> {
 	const answer = await vscode.window.showWarningMessage(
 		`Unlink ${link.webresourceName}?`,
-		{ modal: true, detail: `It will no longer be linked to ${link.localPath}. Neither the file nor the web resource is changed.` },
+		{
+			modal: true,
+			detail:
+				`It will no longer be linked to ${link.localPath}. Neither the file nor the web resource is changed.` +
+				(usesSharedFile() ? ` The link is removed from ${SHARED_FILE_NAME}, so once you commit, it's removed for your team too.` : ''),
+		},
 		'Unlink'
 	);
 	if (answer !== 'Unlink') {return false;}
