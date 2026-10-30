@@ -2,6 +2,14 @@
 
 All notable changes to the "wrsync" extension will be documented in this file.
 
+## [Unreleased]
+
+- **Links can be shared with your team** in a committed `dataverse.json` at the root of the
+  folder: **Share Links with the Team (dataverse.json)** moves your links there. While the file
+  exists, links are read from and saved to it, by web resource name, so they work in every
+  environment. Its environment comes first in **Pick Environment...**. Other tools' settings in
+  the file (like git-pa's) are kept.
+
 ## [0.1.1]
 
 - Added **Search...** to the Filter menu: filters web resources by name, display name, or

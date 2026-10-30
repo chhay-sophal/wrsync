@@ -140,6 +140,37 @@ Only the ticked rows are linked. Nothing is published or changed.
 
 To remove a link, use the **unlink** button or right-click → **Unlink Local File**.
 
+#### Sharing links with your team
+
+By default, links are stored by VS Code for this folder on this machine only. To share them,
+run **Share Links with the Team (dataverse.json)** from the view's **...** menu. It moves your
+links into a `dataverse.json` file at the root of the folder (creating it, with the current
+environment as the team's environment). Commit it, and everyone who opens the folder gets the
+same links, with no linking of their own.
+
+```json
+{
+  "environment": "https://contoso-dev.crm.dynamics.com",
+  "webResources": {
+    "links": [
+      { "name": "new_/scripts/account.js", "file": "src/scripts/account.js" }
+    ]
+  }
+}
+```
+
+- While the folder has a `dataverse.json`, every link you make, change or remove is saved there,
+  so commit those changes like any other.
+- Links are kept by web resource name, which is the same in every environment, so they apply to
+  whichever environment and solution you're browsing.
+- The file's environment is listed first in **Pick Environment...**.
+- The file can hold other tools' settings (for example
+  [git-pa](https://github.com/chhay-sophal/git-pa)'s plug-in deployment); only `webResources`
+  is changed, and comments and formatting are kept. If the file isn't valid JSON, links are
+  unavailable until it's fixed, and nothing is written to it.
+- If you open a folder with a `dataverse.json` after making links on your machine, you're offered
+  to move them into the file. Links already in the file take precedence.
+
 ### 6. Compare and resolve changes
 
 Click a modified (**M**) web resource to open a diff editor with the Dataverse content on
