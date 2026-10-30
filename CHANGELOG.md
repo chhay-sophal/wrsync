@@ -2,21 +2,24 @@
 
 All notable changes to the "wrsync" extension will be documented in this file.
 
-## [Unreleased]
+## [0.2.0]
 
 - **Links can be shared with your team** in a committed `dataverse.json` at the root of the
   folder: **Share Links with the Team (dataverse.json)** moves your links there. While the file
   exists, links are read from and saved to it, by web resource name, so they work in every
   environment. Its environment comes first in **Pick Environment...**. Other tools' settings in
-  the file (like git-pa's) are kept.
-
-## [0.1.1]
-
+  the file (like git-pa's) are kept, and git-pa can deploy the linked web resources
+  (`git pa deploy --web-resources`).
 - Added **Search...** to the Filter menu: filters web resources by name, display name, or
   linked file (with `*` / `?` wildcards) - unlike VS Code's built-in tree find, which only
   sees the name.
 - Added **Go to Web Resource...** (search button in the view's title bar): pick a web
   resource by name, display name, or linked file to select it in the tree.
+- A suggestion's **Compare** diff opens in a new tab instead of beside the list; click the
+  **Suggested Links** tab to get back.
+
+## [0.1.1]
+
 - **Suggest Links finds files by content, whatever their names**: it compares every unlinked
   web resource with every unlinked local file of a matching type, so renamed or moved
   identical copies are matched with certainty; the rest are still matched by name. Very
@@ -24,7 +27,7 @@ All notable changes to the "wrsync" extension will be documented in this file.
 - Suggest Links is faster: the content comparison runs in the extension in one batched pass
   instead of one request per candidate file.
 - Each suggestion has a **Compare** button that opens a read-only diff of the Dataverse
-  content and the chosen file in a new tab.
+  content and the chosen file beside the list.
 
 ## [0.1.0]
 
