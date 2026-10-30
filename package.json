@@ -58,6 +58,11 @@
         "icon": "$(cloud)"
       },
       {
+        "command": "wrsync.shareLinks",
+        "title": "Share Links with the Team (dataverse.json)",
+        "category": "Web Resource Sync"
+      },
+      {
         "command": "wrsync.pickSolution",
         "title": "Pick Solution...",
         "category": "Web Resource Sync",
@@ -409,6 +414,11 @@
           "group": "2_context@2"
         },
         {
+          "command": "wrsync.shareLinks",
+          "when": "view == wrsync.webResources && (!wrsync.sharedLinks || wrsync.hasLocalLinks)",
+          "group": "2_context@3"
+        },
+        {
           "command": "wrsync.signOut",
           "when": "view == wrsync.webResources && wrsync.signedIn",
           "group": "3_account@1"
@@ -570,6 +580,10 @@
         {
           "command": "wrsync.pickEnvironment",
           "when": "wrsync.signedIn"
+        },
+        {
+          "command": "wrsync.shareLinks",
+          "when": "!wrsync.sharedLinks || wrsync.hasLocalLinks"
         },
         {
           "command": "wrsync.signOut",
