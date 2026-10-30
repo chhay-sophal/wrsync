@@ -36,6 +36,8 @@ async function main() {
 		platform: 'node',
 		outfile: 'dist/extension.js',
 		external: ['vscode'],
+		// jsonc-parser's default (UMD) build loads its parts with require() calls a bundle can't follow.
+		alias: { 'jsonc-parser': './node_modules/jsonc-parser/lib/esm/main.js' },
 		logLevel: 'silent',
 		plugins: [
 			/* add to the end of plugins array */

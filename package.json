@@ -692,6 +692,7 @@
     "serialize-javascript": "^7.0.6"
   },
   "dependencies": {
-    "@azure/msal-node": "^5.6.0"
+    "@azure/msal-node": "^5.6.0",
+    "jsonc-parser": "^3.3.1"
   }
 }
