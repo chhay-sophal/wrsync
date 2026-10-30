@@ -1,6 +1,6 @@
 /**
  * Browser stand-in for the VS Code extension, for working on the webview UI (now just the
- * "Suggested links" page - the sidebar is a native tree view) with Vite's hot reload:
+ * "Suggested Links" page - the sidebar is a native tree view) with Vite's hot reload:
  * `npm run dev:mock` (repo root or webview-ui/). Injected ahead of main.tsx only in
  * `--mode mock` (see vite.config.ts) - never part of the extension build.
  *
@@ -98,7 +98,7 @@ function findIdenticalContent(p: { resources: { webresourceid: string; webresour
 const handlers: Record<string, (params: any) => unknown> = {
   "suggestions.findIdenticalContent": findIdenticalContent,
   "compare.openDiff": (p: { webresourceName: string; localPath: string }) => {
-    console.info(`[wrsync mock] Would open a diff beside this tab: ${p.webresourceName} <-> ${p.localPath}`);
+    console.info(`[wrsync mock] Would open a diff in a new tab: ${p.webresourceName} <-> ${p.localPath}`);
   },
   "links.createMany": (p: { links: Omit<ResourceLink, "id">[] }) => {
     const created = p.links.map((l, i) => ({ id: `link-${Date.now()}-${i}`, ...l }));
@@ -154,4 +154,4 @@ Object.assign(window, {
   wrsyncMock: { createdLinks },
 });
 
-console.info("[wrsync mock] Running the Suggested links page against fake data. See src/dev/mockVscode.ts.");
+console.info("[wrsync mock] Running the Suggested Links page against fake data. See src/dev/mockVscode.ts.");

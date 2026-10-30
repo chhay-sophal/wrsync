@@ -72,6 +72,13 @@ To move into the editor instead, use the same actions from the right-click menu.
   sync status, and who last modified it in Dataverse. Images and SVGs also show a thumbnail.
 - **Find**: with the view focused, start typing (or press <kbd>Ctrl</kbd>+<kbd>F</kbd>) to
   find or filter by name — VS Code's built-in tree find.
+- **Search...** (top of the Filter menu): keeps only web resources whose name, display name,
+  or linked file contains the text — e.g. `Account Form` finds a resource by its display name,
+  which the built-in find can't. `*` and `?` work as wildcards (`new_*form*.js`). **Clear
+  Search** (or an empty search) removes it.
+- **Go to Web Resource...** (search button in the title bar): pick a web resource by name,
+  display name, or linked file, and it's selected in the tree. If the current filters hide it,
+  they're reset so it can be shown.
 - **Filter** (funnel button): by type, by managed state, **Show Modified Only**, **Show
   Linked Only**, or **Show Unlinked Only** (handy for finding what still needs linking).
   The funnel turns solid while a filter is on; **Clear Filters** resets it.
@@ -124,13 +131,45 @@ edited. The suggestions open in an editor tab; untick anything wrong:
 
 Very short content (empty files, one-line stubs) and files over 1 MB are left to name
 matching. To check a candidate yourself, click its **Compare** button: a read-only diff of the
-Dataverse content and the chosen file opens beside the list, which stays in view. (Both sides
-are read-only there, since the file isn't linked yet; it shows the file as it was when you
-clicked, and clicking again refreshes it.)
+Dataverse content and the chosen file opens in a new tab; click the **Suggested Links** tab to
+get back to the list. Comparing another candidate reuses that tab. (Both sides are read-only
+there, since the file isn't linked yet; it shows the file as it was when you clicked, and
+clicking again refreshes it.)
 
 Only the ticked rows are linked. Nothing is published or changed.
 
 To remove a link, use the **unlink** button or right-click → **Unlink Local File**.
+
+#### Sharing links with your team
+
+By default, links are stored by VS Code for this folder on this machine only. To share them,
+run **Share Links with the Team (dataverse.json)** from the view's **...** menu. It moves your
+links into a `dataverse.json` file at the root of the folder (creating it, with the current
+environment as the team's environment). Commit it, and everyone who opens the folder gets the
+same links, with no linking of their own.
+
+```json
+{
+  "environment": "https://contoso-dev.crm.dynamics.com",
+  "webResources": {
+    "links": [
+      { "name": "new_/scripts/account.js", "file": "src/scripts/account.js" }
+    ]
+  }
+}
+```
+
+- While the folder has a `dataverse.json`, every link you make, change or remove is saved there,
+  so commit those changes like any other.
+- Links are kept by web resource name, which is the same in every environment, so they apply to
+  whichever environment and solution you're browsing.
+- The file's environment is listed first in **Pick Environment...**.
+- The file can hold other tools' settings (for example
+  [git-pa](https://github.com/chhay-sophal/git-pa)'s plug-in deployment); only `webResources`
+  is changed, and comments and formatting are kept. If the file isn't valid JSON, links are
+  unavailable until it's fixed, and nothing is written to it.
+- If you open a folder with a `dataverse.json` after making links on your machine, you're offered
+  to move them into the file. Links already in the file take precedence.
 
 ### 6. Compare and resolve changes
 
@@ -206,7 +245,7 @@ The extension is split into two parts:
   `@azure/msal-node`) and the Dataverse Web API, and provides the native **Web Resources**
   tree view, its commands, and the editors it opens.
 - **The webview UI** (`webview-ui/`) — a separate React + Vite + Fluent UI project, now used
-  only for the **Suggested links** editor tab. It never calls `fetch()` directly; it talks
+  only for the **Suggested Links** editor tab. It never calls `fetch()` directly; it talks
   to the extension host over `postMessage()` through the RPC bridge in `src/rpc.ts` /
   `webview-ui/src/api/rpc.ts`.
 
@@ -227,19 +266,19 @@ Open the folder in VS Code and press **F5** to launch an Extension Development H
 the extension loaded. The default build task watches both parts and rebuilds on save; to
 see a change in the Extension Development Host:
 
-- `webview-ui/` (the Suggested links tab): nothing to do. When run from F5, the extension
+- `webview-ui/` (the Suggested Links tab): nothing to do. When run from F5, the extension
   watches `webview-ui/dist` and reloads the tab as soon as each rebuild is complete.
 - `src/` (the extension): restart debugging (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>F5</kbd>).
 - `package.json`'s `contributes`: **Developer: Reload Window**, since that's read at
   activation.
 
-### Working on the Suggested links page in a browser
+### Working on the Suggested Links page in a browser
 
 ```
 npm run dev:mock
 ```
 
-The sidebar is a native tree view, so the only webview UI left is the Suggested links tab.
+The sidebar is a native tree view, so the only webview UI left is the Suggested Links tab.
 This serves it at http://localhost:5173 with Vite's hot reload, against fake data instead of
 VS Code and Dataverse (`webview-ui/src/dev/mockVscode.ts`), so edits show up as you type. The
 fixture covers each suggestion outcome: identical content, path match, flat name, ambiguous,
@@ -272,7 +311,7 @@ host — the same checks `npm run package` runs before packaging a `.vsix`.
 | `src/compareProvider.ts` | Read-only Dataverse documents: Compare diffs and View Content |
 | `src/mediaProvider.ts` | Image and SVG previews (via temporary copies) |
 | `src/publishCurrentFile.ts` | "Publish This File" from the editor |
-| `src/linkSuggestionsPanel.ts` / `src/webviewHtml.ts` | Host the Suggested links webview tab |
-| `src/rpc.ts` | Routes the Suggested links tab's calls to the functions above |
+| `src/linkSuggestionsPanel.ts` / `src/webviewHtml.ts` | Host the Suggested Links webview tab |
+| `src/rpc.ts` | Routes the Suggested Links tab's calls to the functions above |
 | `src/devReload.ts` | Under F5, reloads the webview tab after each UI rebuild |
-| `webview-ui/src/features/webresources/` | The Suggested links page |
+| `webview-ui/src/features/webresources/` | The Suggested Links page |

@@ -7,7 +7,7 @@ function prefersDark() {
   return window.matchMedia?.("(prefers-color-scheme: dark)").matches ?? false;
 }
 
-/** The webview now hosts only the "Suggested links" editor tab - the sidebar is a native tree
+/** The webview now hosts only the "Suggested Links" editor tab - the sidebar is a native tree
  * view (src/webResourceTree.ts). */
 export function Root() {
   const [isDark, setIsDark] = useState(prefersDark);

@@ -12,21 +12,22 @@ interface RpcRequest {
 
 type Handler = (params: any) => Promise<unknown>;
 
-/** What the webview (now only the "Suggested links" tab) can call in the extension. */
+/** What the webview (now only the "Suggested Links" tab) can call in the extension. */
 const handlers: Record<string, Handler> = {
 	// One call for the whole content comparison - batched downloads and local reads happen here,
 	// not as a request per candidate from the page.
 	'suggestions.findIdenticalContent': (params: Parameters<typeof findIdenticalContent>[0]) => findIdenticalContent(params),
-	// A candidate's Compare button: opens beside the Suggested links tab, as a preview that
-	// leaves focus on the page, so candidates can be checked one after another. Both sides are
-	// read-only - the candidate isn't linked; this is only for judging the match.
+	// A candidate's Compare button: opens as a tab in the Suggested Links tab's group and takes
+	// focus (the list is behind it; its tab is one click away). A preview tab, so comparing the
+	// next candidate reuses it instead of piling up tabs. Both sides are read-only - the
+	// candidate isn't linked; this is only for judging the match.
 	'compare.openDiff': (params: {
 		orgApiUrl: string;
 		webresourceId: string;
 		webresourceName: string;
 		webresourcetype: number;
 		localPath: string;
-	}) => openCompareDiff({ ...params, preserveFocus: true, viewColumn: vscode.ViewColumn.Beside, localReadOnly: true }),
+	}) => openCompareDiff({ ...params, preview: true, viewColumn: vscode.ViewColumn.Active, localReadOnly: true }),
 	// The modified tracker checks the new links itself (it listens for link changes).
 	'links.createMany': (params: { links: Omit<ResourceLink, 'id'>[] }) => createLinks(params.links),
 };

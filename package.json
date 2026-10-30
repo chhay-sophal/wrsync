@@ -2,7 +2,7 @@
   "name": "wrsync",
   "displayName": "Web Resource Sync",
   "description": "Edit Power Apps (Dataverse) web resources from local files, right inside VS Code",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "publisher": "sophal-developer",
   "license": "MIT",
   "icon": "media/marketplace-icon.png",
@@ -58,6 +58,11 @@
         "icon": "$(cloud)"
       },
       {
+        "command": "wrsync.shareLinks",
+        "title": "Share Links with the Team (dataverse.json)",
+        "category": "Web Resource Sync"
+      },
+      {
         "command": "wrsync.pickSolution",
         "title": "Pick Solution...",
         "category": "Web Resource Sync",
@@ -80,6 +85,23 @@
         "title": "Suggest Links...",
         "category": "Web Resource Sync",
         "icon": "$(sparkle)"
+      },
+      {
+        "command": "wrsync.search",
+        "title": "Search...",
+        "category": "Web Resource Sync",
+        "icon": "$(search)"
+      },
+      {
+        "command": "wrsync.clearSearch",
+        "title": "Clear Search",
+        "category": "Web Resource Sync"
+      },
+      {
+        "command": "wrsync.goToWebResource",
+        "title": "Go to Web Resource...",
+        "category": "Web Resource Sync",
+        "icon": "$(search)"
       },
       {
         "command": "wrsync.filterTypes",
@@ -229,6 +251,15 @@
       ],
       "wrsync.filter": [
         {
+          "command": "wrsync.search",
+          "group": "0_search@1"
+        },
+        {
+          "command": "wrsync.clearSearch",
+          "group": "0_search@2",
+          "when": "wrsync.searchActive"
+        },
+        {
           "command": "wrsync.filterTypes",
           "group": "1_filter@1"
         },
@@ -273,6 +304,15 @@
         }
       ],
       "wrsync.filterActive": [
+        {
+          "command": "wrsync.search",
+          "group": "0_search@1"
+        },
+        {
+          "command": "wrsync.clearSearch",
+          "group": "0_search@2",
+          "when": "wrsync.searchActive"
+        },
         {
           "command": "wrsync.filterTypes",
           "group": "1_filter@1"
@@ -339,14 +379,19 @@
           "group": "navigation@3"
         },
         {
+          "command": "wrsync.goToWebResource",
+          "when": "view == wrsync.webResources && wrsync.signedIn && wrsync.hasSolution",
+          "group": "navigation@4"
+        },
+        {
           "submenu": "wrsync.filter",
           "when": "view == wrsync.webResources && wrsync.signedIn && wrsync.hasSolution && !wrsync.filtersActive",
-          "group": "navigation@4"
+          "group": "navigation@5"
         },
         {
           "submenu": "wrsync.filterActive",
           "when": "view == wrsync.webResources && wrsync.signedIn && wrsync.hasSolution && wrsync.filtersActive",
-          "group": "navigation@4"
+          "group": "navigation@5"
         },
         {
           "command": "wrsync.sortBy",
@@ -367,6 +412,11 @@
           "command": "wrsync.pickEnvironment",
           "when": "view == wrsync.webResources && wrsync.signedIn",
           "group": "2_context@2"
+        },
+        {
+          "command": "wrsync.shareLinks",
+          "when": "view == wrsync.webResources && (!wrsync.sharedLinks || wrsync.hasLocalLinks)",
+          "group": "2_context@3"
         },
         {
           "command": "wrsync.signOut",
@@ -532,6 +582,10 @@
           "when": "wrsync.signedIn"
         },
         {
+          "command": "wrsync.shareLinks",
+          "when": "!wrsync.sharedLinks || wrsync.hasLocalLinks"
+        },
+        {
           "command": "wrsync.signOut",
           "when": "wrsync.signedIn"
         },
@@ -562,6 +616,18 @@
         {
           "command": "wrsync.showUnlinkedOnly",
           "when": "wrsync.signedIn && wrsync.hasSolution"
+        },
+        {
+          "command": "wrsync.search",
+          "when": "wrsync.signedIn && wrsync.hasSolution"
+        },
+        {
+          "command": "wrsync.goToWebResource",
+          "when": "wrsync.signedIn && wrsync.hasSolution"
+        },
+        {
+          "command": "wrsync.clearSearch",
+          "when": "wrsync.searchActive"
         }
       ]
     },
@@ -640,6 +706,7 @@
     "serialize-javascript": "^7.0.6"
   },
   "dependencies": {
-    "@azure/msal-node": "^5.6.0"
+    "@azure/msal-node": "^5.6.0",
+    "jsonc-parser": "^3.3.1"
   }
 }

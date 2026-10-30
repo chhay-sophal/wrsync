@@ -2,6 +2,22 @@
 
 All notable changes to the "wrsync" extension will be documented in this file.
 
+## [0.2.0]
+
+- **Links can be shared with your team** in a committed `dataverse.json` at the root of the
+  folder: **Share Links with the Team (dataverse.json)** moves your links there. While the file
+  exists, links are read from and saved to it, by web resource name, so they work in every
+  environment. Its environment comes first in **Pick Environment...**. Other tools' settings in
+  the file (like git-pa's) are kept, and git-pa can deploy the linked web resources
+  (`git pa deploy --web-resources`).
+- Added **Search...** to the Filter menu: filters web resources by name, display name, or
+  linked file (with `*` / `?` wildcards) - unlike VS Code's built-in tree find, which only
+  sees the name.
+- Added **Go to Web Resource...** (search button in the view's title bar): pick a web
+  resource by name, display name, or linked file to select it in the tree.
+- A suggestion's **Compare** diff opens in a new tab instead of beside the list; click the
+  **Suggested Links** tab to get back.
+
 ## [0.1.1]
 
 - **Suggest Links finds files by content, whatever their names**: it compares every unlinked
@@ -78,7 +94,7 @@ All notable changes to the "wrsync" extension will be documented in this file.
 - Large solutions no longer fail to load: web resources are listed in batches instead of one
   request whose URL could exceed Dataverse's length limit.
 - Linking a file and Suggest Links list workspace files faster in large repositories.
-- An unexpected error in the Suggested links tab shows a recovery screen (Try again /
+- An unexpected error in the Suggested Links tab shows a recovery screen (Try again /
   Reload / Reset & reload, plus error details) instead of a blank view.
 
 ## [0.0.2]

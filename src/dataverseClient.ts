@@ -34,6 +34,17 @@ export function toApiUrl(orgUrl: string): string {
   return `${url.protocol}//${labels.join(".")}`;
 }
 
+/** The reverse of toApiUrl: an environment's app URL (https://org.crm5.dynamics.com), as people
+ * (and git-pa) write it. */
+export function toAppUrl(apiUrl: string): string {
+  const url = new URL(apiUrl);
+  const labels = url.hostname.split(".");
+  if (labels[1] === "api") {
+    labels.splice(1, 1);
+  }
+  return `${url.protocol}//${labels.join(".")}`;
+}
+
 /** Power Platform API's "List Environments For User" — returns environments across every
  * tenant the account can see, including tenantId per environment, which Global Discovery
  * (its now-legacy predecessor) doesn't surface as cleanly for guest accounts. */
@@ -155,6 +166,36 @@ export async function listWebResourcesForSolution(
     })
   );
   return batches.flat();
+}
+
+/** Names per request when looking web resources up by name: names run longer than ids, so a
+ * smaller batch keeps the URL within Dataverse's length limit. */
+const NAME_BATCH_SIZE = 20;
+
+/** Finds web resources by name (case-insensitive, as Dataverse compares them) in any solution.
+ * Names that don't exist in the environment are simply missing from the result. */
+export async function findWebResourcesByName(
+  orgApiUrl: string,
+  names: string[],
+  token?: string
+): Promise<Pick<WebResource, "webresourceid" | "name">[]> {
+  const batches: string[][] = [];
+  for (let i = 0; i < names.length; i += NAME_BATCH_SIZE) {
+    batches.push(names.slice(i, i + NAME_BATCH_SIZE));
+  }
+  const results = await Promise.all(
+    batches.map(async (batch) => {
+      const filter = batch.map((name) => `name eq '${name.replace(/'/g, "''")}'`).join(" or ");
+      const res = await callDataverse(
+        orgApiUrl,
+        `webresourceset?$select=webresourceid,name&$filter=${encodeURIComponent(filter)}`,
+        {},
+        token
+      );
+      return ((await res.json()) as { value: Pick<WebResource, "webresourceid" | "name">[] }).value;
+    })
+  );
+  return results.flat();
 }
 
 export async function getWebResourceDetails(

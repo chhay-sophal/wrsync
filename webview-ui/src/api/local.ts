@@ -21,8 +21,8 @@ export function findIdenticalContent(params: {
   return callRpc<ContentMatches>("suggestions.findIdenticalContent", params);
 }
 
-/** Opens VS Code's diff of the web resource's Dataverse content and a local file, beside the
- * Suggested links tab. */
+/** Opens VS Code's read-only diff of the web resource's Dataverse content and a local file, in
+ * a new tab next to the Suggested Links tab. */
 export function openCompareDiff(params: {
   orgApiUrl: string;
   webresourceId: string;

@@ -1,6 +1,6 @@
 /** Dataverse web resource type codes (webresourcetype) and what this extension can do with
  * each. Keep LINKABLE_EXTENSIONS in sync with webview-ui/src/features/webresources/
- * webResourceTypes.ts (used by the Suggested links page) and with INCLUDE_GLOB in
+ * webResourceTypes.ts (used by the Suggested Links page) and with INCLUDE_GLOB in
  * workspaceFiles.ts, or matching files won't be offered. */
 
 export const TYPE_LABELS: Record<number, string> = {

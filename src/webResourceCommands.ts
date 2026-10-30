@@ -1,10 +1,11 @@
 import * as vscode from 'vscode';
 import { getAuthStatus, login, logout } from './auth';
 import { openCompareDiff, openRemoteContent } from './compareProvider';
-import { createWebResource, getWebResourceDetails, listEnvironments, listSolutions } from './dataverseClient';
+import { createWebResource, getWebResourceDetails, listEnvironments, listSolutions, toApiUrl, toAppUrl, type DataverseEnvironment } from './dataverseClient';
 import { openLinkSuggestionsPanel } from './linkSuggestionsPanel';
 import { openRemoteMedia } from './mediaProvider';
-import { createLink, listLinks } from './linksStore';
+import { createLink, listLinks, localLinkCount, moveLocalLinksToSharedFile, sharedEnvironmentUrl, sharedFileLoaded, usesSharedFile } from './linksStore';
+import { SHARED_FILE_NAME } from './sharedLinks';
 import { forgetAll, recheckAll, recheckEnvironment } from './modifiedTracker';
 import {
 	clearSelection,
@@ -84,13 +85,18 @@ async function pickEnvironment(): Promise<boolean> {
 		return false;
 	}
 	const current = getEnvironment();
+	// The team's environment from dataverse.json comes first.
+	const teamUrl = sharedEnvironmentUrl();
+	const isTeam = (env: DataverseEnvironment) => teamUrl !== undefined && sameUrl(env.apiUrl, toApiUrl(teamUrl));
 	const picked = await vscode.window.showQuickPick(
 		environments
-			.sort((a, b) => a.displayName.localeCompare(b.displayName))
+			.sort((a, b) => Number(isTeam(b)) - Number(isTeam(a)) || a.displayName.localeCompare(b.displayName))
 			.map((env) => ({
 				label: env.displayName,
 				description: new URL(env.apiUrl).hostname,
-				detail: env.id === current?.id ? 'Current' : undefined,
+				detail: [env.id === current?.id ? 'Current' : undefined, isTeam(env) ? `Team environment (${SHARED_FILE_NAME})` : undefined]
+					.filter(Boolean)
+					.join(' · ') || undefined,
 				env,
 			})),
 		{ title: 'Pick a Dataverse environment', matchOnDescription: true }
@@ -126,6 +132,47 @@ async function pickSolution(): Promise<boolean> {
 	if (!picked) {return false;}
 	await setSolution(picked.sol);
 	return true;
+}
+
+function sameUrl(a: string, b: string): boolean {
+	try {
+		return new URL(a).host.toLowerCase() === new URL(b).host.toLowerCase();
+	} catch {
+		return false;
+	}
+}
+
+/** Moves links stored on this machine into dataverse.json (creating it, with the current
+ * environment as the team's), so they're committed and shared. */
+async function shareLinks(): Promise<void> {
+	const environment = getEnvironment();
+	const moved = await moveLocalLinksToSharedFile(environment, environment ? toAppUrl(environment.apiUrl) : undefined);
+	const answer = await vscode.window.showInformationMessage(
+		moved > 0
+			? `Moved ${moved} link${moved === 1 ? '' : 's'} to ${SHARED_FILE_NAME}. Commit it so your team gets them.`
+			: `Links are now kept in ${SHARED_FILE_NAME}. Commit it so your team shares them.`,
+		`Open ${SHARED_FILE_NAME}`
+	);
+	const folder = vscode.workspace.workspaceFolders?.[0];
+	if (answer && folder) {
+		await vscode.window.showTextDocument(vscode.Uri.joinPath(folder.uri, SHARED_FILE_NAME));
+	}
+}
+
+/** When the folder has a dataverse.json, links made earlier on this machine aren't used:
+ * offers once per session to move them into the file. */
+function offerToShareLocalLinks(): void {
+	void sharedFileLoaded().then(async () => {
+		const count = localLinkCount();
+		if (!usesSharedFile() || count === 0) {return;}
+		const answer = await vscode.window.showInformationMessage(
+			`This folder keeps web resource links in ${SHARED_FILE_NAME}, shared with your team. ` +
+				`${count} link${count === 1 ? '' : 's'} you made earlier ${count === 1 ? 'is' : 'are'} stored only on this machine and not shown. Move them into ${SHARED_FILE_NAME}?`,
+			'Move Links',
+			'Not Now'
+		);
+		if (answer === 'Move Links') {await guarded('Share links', shareLinks)();}
+	});
 }
 
 export function registerWebResourceCommands(context: vscode.ExtensionContext, tree: WebResourceTree): void {
@@ -183,6 +230,8 @@ export function registerWebResourceCommands(context: vscode.ExtensionContext, tr
 
 	register('wrsync.pickEnvironment', guarded('Pick environment', async () => (await pickEnvironment()) && pickSolution()));
 	register('wrsync.pickSolution', guarded('Pick solution', pickSolution));
+	register('wrsync.shareLinks', guarded('Share links', shareLinks));
+	offerToShareLocalLinks();
 	register(
 		'wrsync.refresh',
 		guarded('Refresh', async () => {
@@ -306,6 +355,49 @@ export function registerWebResourceCommands(context: vscode.ExtensionContext, tr
 	register('wrsync.showUnlinkedOnly', toggleLink('unlinked'));
 	register('wrsync.showAllNotOnlyUnlinked', toggleLink('unlinked'));
 	register('wrsync.clearFilters', guarded('Clear filters', () => setFilters(EMPTY_FILTERS)));
+	register(
+		'wrsync.search',
+		guarded('Search', async () => {
+			const filters = getFilters();
+			const search = await vscode.window.showInputBox({
+				title: 'Search web resources',
+				prompt: 'Matches name, display name or linked file. Use * and ? as wildcards (e.g. new_*form*.js). Leave empty to clear.',
+				value: filters.search,
+				placeHolder: 'e.g. account, Account Form, src/forms',
+			});
+			if (search !== undefined) {await setFilters({ ...filters, search: search.trim() });}
+		})
+	);
+	register('wrsync.clearSearch', guarded('Clear search', () => setFilters({ ...getFilters(), search: '' })));
+	register(
+		'wrsync.goToWebResource',
+		guarded('Go to web resource', async () => {
+			const nodes = [...tree.allNodes()].sort((a, b) => a.resource.name.localeCompare(b.resource.name));
+			if (nodes.length === 0) {
+				vscode.window.showInformationMessage('No web resources loaded yet.');
+				return;
+			}
+			const picked = await vscode.window.showQuickPick(
+				nodes.map((node) => {
+					const hidden = !tree.isVisible(node);
+					return {
+						label: node.resource.name,
+						description: node.resource.displayname,
+						detail: [node.link ? `$(link) ${node.link.localPath}` : undefined, hidden ? 'hidden by current filters' : undefined]
+							.filter(Boolean)
+							.join(' · ') || undefined,
+						node,
+						hidden,
+					};
+				}),
+				{ title: 'Go to web resource', placeHolder: 'Search by name, display name or linked file', matchOnDescription: true, matchOnDetail: true }
+			);
+			if (!picked) {return;}
+			// It can only be shown and selected if the filters let it through.
+			if (picked.hidden) {await setFilters(EMPTY_FILTERS);}
+			await tree.revealNode(picked.node);
+		})
+	);
 	register(
 		'wrsync.sortBy',
 		guarded('Sort', async () => {
