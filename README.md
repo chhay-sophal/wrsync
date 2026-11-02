@@ -140,6 +140,12 @@ Only the ticked rows are linked. Nothing is published or changed.
 
 To remove a link, use the **unlink** button or right-click → **Unlink Local File**.
 
+**Renaming or moving linked files.** Rename or move a file (or a whole folder) in VS Code, by
+Explorer, drag and drop or a refactoring, and its links follow it. A linked file renamed, moved
+or deleted any other way (outside VS Code, or by a `git pull`) is marked with a **!** and
+*(missing)* next to its path. Click its **link** button to relink it, or run **Suggest Links**,
+which also looks for a new file for these links and finds a renamed file by its content.
+
 #### Sharing links with your team
 
 By default, links are stored by VS Code for this folder on this machine only. To share them,

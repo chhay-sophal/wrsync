@@ -2,6 +2,16 @@
 
 All notable changes to the "wrsync" extension will be documented in this file.
 
+## [Unreleased]
+
+- **Links follow renamed and moved files**: renaming or moving a linked file, or a folder of
+  them, in VS Code updates its links (in `dataverse.json` too).
+- **Links to missing files are flagged**: a linked file renamed, moved or deleted outside VS Code
+  (or by a `git pull`) shows **!** and *(missing)*, isn't counted as modified, and has a **link**
+  button to relink it.
+- **Suggest Links** also suggests new files for links whose file is missing, so a renamed file
+  is found by its content.
+
 ## [0.2.0]
 
 - **Links can be shared with your team** in a committed `dataverse.json` at the root of the
