@@ -64,6 +64,23 @@ export function initLinksStore(context: vscode.ExtensionContext): void {
 		const watcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(folder, SHARED_FILE_NAME));
 		const reload = () => void loadSharedFile().then(() => resolveAllEnvironments());
 		context.subscriptions.push(watcher, watcher.onDidCreate(reload), watcher.onDidChange(reload), watcher.onDidDelete(reload));
+		// Renames and moves made in VS Code (Explorer, drag and drop, refactorings) carry their links along.
+		context.subscriptions.push(
+			vscode.workspace.onDidRenameFiles(async (event) => {
+				const inFolder = (uri: vscode.Uri) => vscode.workspace.getWorkspaceFolder(uri)?.uri.toString() === folder.uri.toString();
+				const moves = event.files
+					.filter((f) => inFolder(f.oldUri) && inFolder(f.newUri))
+					.map((f) => ({ from: vscode.workspace.asRelativePath(f.oldUri, false), to: vscode.workspace.asRelativePath(f.newUri, false) }));
+				try {
+					const moved = await moveLinkedPaths(moves);
+					if (moved > 0) {
+						vscode.window.setStatusBarMessage(`$(link) Updated ${moved} web resource link${moved === 1 ? '' : 's'} to the new path`, 5000);
+					}
+				} catch (err) {
+					vscode.window.showWarningMessage(`Couldn't update web resource links after the rename: ${(err as Error).message}`);
+				}
+			})
+		);
 	}
 	context.subscriptions.push(linksChanged);
 	initialLoad = loadSharedFile();
@@ -227,6 +244,36 @@ export async function createLinks(newLinks: Omit<ResourceLink, 'id'>[]): Promise
 	await workspaceState.update(STORAGE_KEY, links);
 	changed();
 	return created;
+}
+
+/** Points links at a renamed or moved file, or at files inside a renamed or moved folder (paths
+ * relative to the workspace folder). Returns how many links changed. */
+export async function moveLinkedPaths(moves: { from: string; to: string }[]): Promise<number> {
+	const remap = (path: string): string | undefined => {
+		for (const { from, to } of moves) {
+			if (path === from) {return to;}
+			if (path.startsWith(`${from}/`)) {return to + path.slice(from.length);}
+		}
+		return undefined;
+	};
+	let moved = 0;
+	if (shared) {
+		const links = shared.links.map((l) => ({ name: l.name, file: remap(l.file) ?? l.file }));
+		const count = shared.links.filter((l) => remap(l.file) !== undefined).length;
+		if (count > 0) {
+			await saveSharedLinks(links);
+			moved += count;
+		}
+	}
+	// Links stored on this machine (the only ones without dataverse.json; unused but kept with it).
+	const local = listLocalLinks();
+	if (local.some((l) => remap(l.localPath) !== undefined)) {
+		const localMoved = local.filter((l) => remap(l.localPath) !== undefined).length;
+		await workspaceState.update(STORAGE_KEY, local.map((l) => ({ ...l, localPath: remap(l.localPath) ?? l.localPath })));
+		if (!shared) {moved += localMoved;}
+		changed();
+	}
+	return moved;
 }
 
 export async function deleteLink(id: string): Promise<void> {
