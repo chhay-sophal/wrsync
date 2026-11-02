@@ -297,7 +297,8 @@ export function registerWebResourceCommands(context: vscode.ExtensionContext, tr
 				solutionName: solution.friendlyname,
 				resources: tree
 					.allNodes()
-					.filter((n) => !n.link && n.linkable)
+					// A link whose file is missing needs a new file, which content matching can find.
+					.filter((n) => (!n.link || n.missing) && n.linkable)
 					.map(({ resource: r }) => ({ webresourceid: r.webresourceid, name: r.name, webresourcetype: r.webresourcetype })),
 				filePaths: files.map((f) => f.path).filter((p) => !linkedPaths.has(p)),
 			});
@@ -576,6 +577,12 @@ export function registerWebResourceCommands(context: vscode.ExtensionContext, tr
 			const target = one(tree, node);
 			const folder = vscode.workspace.workspaceFolders?.[0];
 			if (!target?.link || !folder) {return;}
+			if (target.missing) {
+				vscode.window.showInformationMessage(
+					`${target.link.localPath} doesn't exist: it was renamed, moved or deleted. Use Link to Local File... to relink ${target.resource.name}.`
+				);
+				return;
+			}
 			await vscode.window.showTextDocument(vscode.Uri.joinPath(folder.uri, target.link.localPath), {
 				preview: true,
 				preserveFocus: preservesFocus(options),

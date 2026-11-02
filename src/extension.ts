@@ -5,6 +5,7 @@ import { initDevReload } from './devReload';
 import { initLinkSuggestionsPanel } from './linkSuggestionsPanel';
 import { initLinksStore } from './linksStore';
 import { initMediaProvider } from './mediaProvider';
+import { initMissingFiles } from './missingFiles';
 import { initModifiedTracker, setBadgeTarget } from './modifiedTracker';
 import { initPublishCurrentFile } from './publishCurrentFile';
 import { initState } from './state';
@@ -18,6 +19,7 @@ export function activate(context: vscode.ExtensionContext) {
 	initState(context);
 	initCompareProvider(context);
 	initMediaProvider(context);
+	initMissingFiles(context);
 	initModifiedTracker(context);
 	initLinkSuggestionsPanel(context);
 	initPublishCurrentFile(context);

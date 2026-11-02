@@ -3,6 +3,7 @@ import { getAccessTokenSilent, getAuthStatus, POWER_PLATFORM_RESOURCE } from './
 import { getWebResourceContents, toApiUrl } from './dataverseClient';
 import { watchWorkspaceFiles } from './fileWatcher';
 import { listLinks, onDidChangeLinks, type ResourceLink } from './linksStore';
+import { isLinkedFileMissing, onDidChangeMissingFiles } from './missingFiles';
 import { getEnvironment } from './state';
 import { normalizeForCompare } from './textCompare';
 
@@ -38,7 +39,8 @@ const keyOf = (link: Pick<ResourceLink, 'environmentId' | 'webresourceId'>) => `
 /** Whether the link's local file differs from Dataverse (false until it's been checked). */
 export function isLinkModified(link: ResourceLink): boolean {
 	const state = states.get(keyOf(link));
-	return state !== undefined && state.localPath === link.localPath && state.modified;
+	// A missing file keeps its last state, but there's nothing to publish until it's relinked.
+	return state !== undefined && state.localPath === link.localPath && state.modified && !isLinkedFileMissing(link.localPath);
 }
 
 /** Sets which view's badge (shown on the Activity Bar icon) reflects the modified count. */
@@ -63,6 +65,7 @@ export function initModifiedTracker(context: vscode.ExtensionContext): void {
 			);
 		}),
 		onDidChangeLinks(() => syncWithLinks()),
+		onDidChangeMissingFiles(() => changed()),
 		modifiedChanged,
 		{ dispose: () => fileTimers.forEach((t) => clearTimeout(t)) }
 	);

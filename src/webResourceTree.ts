@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { getAuthStatus } from './auth';
 import { getWebResourceContent, getWebResourceDetails, listWebResourcesForSolution, type WebResource } from './dataverseClient';
 import { listLinks, onDidChangeLinks, useEnvironment, type ResourceLink } from './linksStore';
+import { isLinkedFileMissing, onDidChangeMissingFiles } from './missingFiles';
 import { checkUnchecked, isLinkModified, onDidChangeModified } from './modifiedTracker';
 import { filtersActive, getEnvironment, getFilters, getSolution, getSort, matchesText, onDidChangeState } from './state';
 import {
@@ -35,6 +36,8 @@ export interface WebResourceNode {
 	modified: boolean;
 	/** Linked to a file whose type doesn't match (a link made before type checks existed). */
 	mismatched: boolean;
+	/** Linked to a file that doesn't exist (renamed, moved or deleted outside VS Code). */
+	missing: boolean;
 	/** Can be linked to a local file: an unmanaged resource of a text type. Managed resources
 	 * come from installed solutions and are read-only here - view their content instead. */
 	linkable: boolean;
@@ -45,7 +48,7 @@ export interface WebResourceNode {
 
 /** Linked, out of sync, and safe to publish/pull/compare. */
 export function canSync(node: WebResourceNode): boolean {
-	return node.link !== undefined && node.modified && !node.mismatched && !node.resource.ismanaged;
+	return node.link !== undefined && node.modified && !node.mismatched && !node.missing && !node.resource.ismanaged;
 }
 
 /** The item's identity for icons and decorations. The path ends in the type's extension even
@@ -64,6 +67,7 @@ function contextValue(node: WebResourceNode): string {
 	else if (node.linkable) {flags.push('linkable');}
 	if (canSync(node)) {flags.push('syncable');}
 	if (node.mismatched) {flags.push('mismatched');}
+	if (node.missing) {flags.push('missing');}
 	if (node.viewable) {flags.push('viewable');}
 	if (isSvgType(node.resource.webresourcetype)) {flags.push('svg');}
 	return `;${flags.join(';')};`;
@@ -122,6 +126,7 @@ export class WebResourceTree
 			// re-renders when links or their Modified state change.
 			onDidChangeLinks(() => this.render()),
 			onDidChangeModified(() => this.render()),
+			onDidChangeMissingFiles(() => this.render()),
 			this.view.onDidChangeSelection(() => this.updateSelectionContext())
 		);
 		this.reload();
@@ -181,12 +186,14 @@ export class WebResourceTree
 		this.nodes.clear();
 		for (const resource of this.resources ?? []) {
 			const link = linkById.get(resource.webresourceid);
+			const missing = link !== undefined && isLinkedFileMissing(link.localPath);
 			this.nodes.set(resource.webresourceid, {
 				resource,
 				link,
 				// A managed resource can't be published, so a leftover link never makes it "modified".
-				modified: link !== undefined && !resource.ismanaged && isLinkModified(link),
+				modified: link !== undefined && !resource.ismanaged && !missing && isLinkModified(link),
 				mismatched: link !== undefined && !isLinkableFile(resource.webresourcetype, link.localPath),
+				missing,
 				linkable: !resource.ismanaged && linkableExtensions(resource.webresourcetype) !== null,
 				viewable: isTextType(resource.webresourcetype) || isImageType(resource.webresourcetype),
 			});
@@ -297,7 +304,7 @@ export class WebResourceTree
 		item.id = resource.webresourceid; // Keeps selection and focus across refreshes.
 		item.resourceUri = resourceUri(resource);
 		item.iconPath = vscode.ThemeIcon.File;
-		item.description = link?.localPath;
+		item.description = link && node.missing ? `${link.localPath} (missing)` : link?.localPath;
 		item.contextValue = contextValue(node);
 		// Click: compare a modified resource; open the local file of an in-sync linked one; show
 		// the Dataverse content of anything else (managed, or not linked). All open as a preview
@@ -305,7 +312,7 @@ export class WebResourceTree
 		const click: ItemClickOptions = { preserveFocus: true };
 		if (canSync(node)) {
 			item.command = { command: 'wrsync.compare', title: 'Compare', arguments: [node, click] };
-		} else if (link && !node.mismatched && !resource.ismanaged) {
+		} else if (link && !node.mismatched && !node.missing && !resource.ismanaged) {
 			item.command = { command: 'wrsync.openLocalFile', title: 'Open Local File', arguments: [node, click] };
 		} else if (isSvgType(resource.webresourcetype)) {
 			// The rendered graphic is more useful at a glance than its XML (still on right-click).
@@ -362,7 +369,9 @@ export class WebResourceTree
 			}
 		} else if (link) {
 			md.appendMarkdown(`$(link) \`${escapeMd(link.localPath)}\`\n\n`);
-			if (node.mismatched) {
+			if (node.missing) {
+				md.appendMarkdown("$(warning) The linked file doesn't exist: it was renamed, moved or deleted. Click the link button to relink it.\n\n");
+			} else if (node.mismatched) {
 				md.appendMarkdown(`$(error) This file type can't be published to a ${typeLabel(resource.webresourcetype)} web resource. Unlink it and link a matching file.\n\n`);
 			} else if (node.modified) {
 				md.appendMarkdown('$(diff-modified) Modified: the local file differs from Dataverse. Click to compare.\n\n');
@@ -384,6 +393,9 @@ export class WebResourceTree
 		if (uri.scheme !== SCHEME) {return undefined;}
 		const node = this.nodes.get(uri.query);
 		if (!node) {return undefined;}
+		if (node.missing) {
+			return new vscode.FileDecoration('!', 'Linked file is missing', new vscode.ThemeColor('list.warningForeground'));
+		}
 		if (node.mismatched) {
 			return new vscode.FileDecoration('!', 'Linked file type doesn\'t match', new vscode.ThemeColor('list.errorForeground'));
 		}

@@ -432,7 +432,7 @@
         },
         {
           "command": "wrsync.link",
-          "when": "view == wrsync.webResources && viewItem =~ /;linkable;/",
+          "when": "view == wrsync.webResources && viewItem =~ /;(linkable|missing);/",
           "group": "inline@1"
         },
         {
@@ -472,7 +472,7 @@
         },
         {
           "command": "wrsync.link",
-          "when": "view == wrsync.webResources && viewItem =~ /;linkable;/",
+          "when": "view == wrsync.webResources && viewItem =~ /;(linkable|missing);/",
           "group": "2_link@2"
         },
         {
