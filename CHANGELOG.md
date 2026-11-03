@@ -2,7 +2,7 @@
 
 All notable changes to the "wrsync" extension will be documented in this file.
 
-## [Unreleased]
+## [0.2.1]
 
 - **Links follow renamed and moved files**: renaming or moving a linked file, or a folder of
   them, in VS Code updates its links (in `dataverse.json` too).
